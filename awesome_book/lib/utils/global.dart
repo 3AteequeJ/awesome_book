@@ -24,6 +24,7 @@ class API {
   static const String baseURL = "https://awesomebook.in/awesomebookbackend/";
   static const String Login = baseURL + "login";
   static const String GetPosts = baseURL + "u_getPosts";
+  static const String GetStories = baseURL + "Get_stories";
   static const String GetReels = baseURL + "Get_reels";
   static const String Get_foryouPosts = baseURL + "Get_foryou";
   static const String GetComments = baseURL + "get_comments";

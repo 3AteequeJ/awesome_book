@@ -3,6 +3,8 @@ import 'package:awesome_book/Cards/posts_card.dart';
 import 'package:awesome_book/Image/Camera_scrn.dart';
 import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/models/posts_model.dart';
+import 'package:awesome_book/models/stories_model.dart';
+import 'package:awesome_book/try/camera.dart';
 import 'package:awesome_book/widgets/storiesCircle.dart';
 import 'package:flutter/material.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
@@ -18,6 +20,7 @@ class Home_scrn extends StatefulWidget {
 
 class _Home_scrnState extends State<Home_scrn> {
   List<Post_model> PM = [];
+  List<StoryUser> SU = [];
   ScrollController _scrollController = ScrollController();
   bool isLoading = false;
   int page = 1;
@@ -27,6 +30,7 @@ class _Home_scrnState extends State<Home_scrn> {
   void initState() {
     super.initState();
     fetchPosts_async();
+    // fetchStories_async();
 
     // Attach scroll listener for infinite scroll
     _scrollController.addListener(() {
@@ -43,6 +47,7 @@ class _Home_scrnState extends State<Home_scrn> {
       PM.clear();
       page = 1;
     });
+    // fetchStories_async();
     await fetchPosts_async();
   }
 
@@ -78,6 +83,56 @@ class _Home_scrnState extends State<Home_scrn> {
         setState(() {
           PM.addAll(newPosts);
           page++;
+        });
+      }
+    } catch (e) {
+      print("Error fetching posts: $e");
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  Future<void> fetchStories_async() async {
+    print("Fetching stories...");
+    // List<StoryUser> story_users = [];
+    if (isLoading) return;
+    setState(() => isLoading = true);
+
+    Uri url = Uri.parse("${glb.API.GetStories}");
+    // print("Fetching: $url");
+
+    try {
+      var res = await http.post(url, body: {'user_id': glb.userDetails.id});
+      print("pot bdy = ${res.body}");
+      if (res.statusCode == 200) {
+        for (var i = 0; i < 5; i++) {
+          var story = jsonDecode(res.body)[i];
+          String username = story['username'].toString();
+          String userImage = story['userImage'].toString();
+
+          List<Story> stories = [];
+
+          for (var j = 0; j < 5; j++) {
+            var storyData = jsonDecode(res.body)[i]['stories'][j];
+            stories.add(Story(
+              imageUrl: glb.API.baseURL +
+                  "public/" +
+                  storyData['imageUrl'].toString(),
+              timeAgo: storyData['timestamp'].toString(),
+            ));
+          }
+          SU.add(StoryUser(
+            username: username,
+            userImage: glb.API.baseURL + "public/" + userImage,
+            stories: stories,
+          ));
+        }
+        // stories.add(StoryUser(
+
+        //     username: username, userImage: userImage, stories: stories));
+        setState(() {
+          // SU = story_users;
+          // page++;
         });
       }
     } catch (e) {
@@ -141,9 +196,12 @@ class _Home_scrnState extends State<Home_scrn> {
               height: 15.h,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 5,
+                itemCount: SU.length,
                 itemBuilder: (context, index) {
-                  return StoriesCircle(name: 'Story $index');
+                  return StoriesCircle(
+                    name: 'Story $index',
+                    idx: index,
+                  );
                 },
               ),
             ),

@@ -24,6 +24,7 @@ import 'package:path_provider/path_provider.dart';
 
 late List<CameraDescription> _cameras;
 Future<void> main() async {
+  debugPrint = (String? message, {int? wrapWidth}) {};
   WidgetsFlutterBinding.ensureInitialized();
 
   _cameras = await availableCameras();
@@ -56,7 +57,7 @@ class MyApp extends StatelessWidget {
           ),
           initialRoute: RouteGenerator.rt_splash,
           onGenerateRoute: RouteGenerator.generateRoute,
-          // home: VideoRecorderScreen(cameras: _cameras),
+          // home: HomePage(),
           // home: ChatScreen(
           //   userId: 1,
           //   receiverId: 2,
