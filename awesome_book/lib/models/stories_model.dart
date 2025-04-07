@@ -17,7 +17,7 @@ class Story {
   final String imageUrl;
   final String timeAgo;
   final String storyType; // 'image' or 'video'
-  final String viewed;
+  String viewed;
 
   Story({
     required this.storyId,

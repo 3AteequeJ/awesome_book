@@ -205,9 +205,9 @@ class _Home_scrnState extends State<Home_scrn> {
             child: IconButton(
               icon: Icon(Icons.send),
               onPressed: () {
-                // Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
+                Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
                 // print("Send button pressed");
-                fetchStories_async();
+                // fetchStories_async();
                 // saveUser(glb.newUser(name: 'atq', age: 1));
                 // getMeMyUser();
               },

@@ -104,7 +104,10 @@ class API {
   static const String GetComments = baseURL + "get_comments";
   static const String UploadPost = baseURL + "Upload_post";
   static const String AddLike = baseURL + "Upload_likes";
+  static const String unlike_post = baseURL + "unlike_post";
+  static const String ViewStory = baseURL + "View_story";
   static const String uploadComment = baseURL + "Upload_comments";
+  static const String GetMsgLst = baseURL + "GetMsgLst";
 }
 
 errorSnackBar(BuildContext context, String message) {
