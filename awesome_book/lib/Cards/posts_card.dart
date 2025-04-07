@@ -123,7 +123,7 @@ class _Posts_cardState extends State<Posts_card> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100,
+      color: Colors.grey[100],
       margin: EdgeInsets.only(top: 1.h, bottom: 2.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

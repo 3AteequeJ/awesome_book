@@ -204,6 +204,327 @@
 //   }
 // }
 
+// class StoryView extends StatefulWidget {
+//   final int initialUserIndex;
+//   final List<User> users;
+
+//   const StoryView({
+//     Key? key,
+//     required this.initialUserIndex,
+//     required this.users,
+//   }) : super(key: key);
+
+//   @override
+//   State<StoryView> createState() => _StoryViewState();
+// }
+
+// class _StoryViewState extends State<StoryView>
+//     with SingleTickerProviderStateMixin {
+//   late PageController _userPageController;
+//   late AnimationController _animationController;
+//   int _currentUserIndex = 0;
+//   int _currentStoryIndex = 0;
+//   bool _isPaused = false;
+
+//   @override
+//   void initState() {
+//     super.initState();
+
+//     _currentUserIndex = widget.initialUserIndex;
+//     _userPageController = PageController(initialPage: _currentUserIndex);
+//     _animationController =
+//         AnimationController(vsync: this, duration: const Duration(seconds: 5));
+
+//     _animationController.addStatusListener((status) {
+//       if (status == AnimationStatus.completed) {
+//         _animationController.reset();
+//         _nextStory();
+//       }
+//     });
+
+//     _loadStory();
+//   }
+
+//   @override
+//   void dispose() {
+//     _userPageController.dispose();
+//     _animationController.dispose();
+//     super.dispose();
+//   }
+
+//   void _loadStory() {
+//     _animationController.forward();
+//   }
+
+//   void _nextStory() {
+//     User currentUser = widget.users[_currentUserIndex];
+
+//     if (_currentStoryIndex < currentUser.stories.length - 1) {
+//       // Go to next story of current user
+//       setState(() {
+//         _currentStoryIndex++;
+//       });
+//       _animationController.forward();
+//     } else if (_currentUserIndex < widget.users.length - 1) {
+//       // Go to first story of next user
+//       setState(() {
+//         _currentUserIndex++;
+//         _currentStoryIndex = 0;
+//       });
+//       _userPageController.animateToPage(
+//         _currentUserIndex,
+//         duration: const Duration(milliseconds: 500),
+//         curve: Curves.easeInOut,
+//       );
+//       _animationController.forward();
+//     } else {
+//       // End of all stories
+//       Navigator.pop(context);
+//     }
+//   }
+
+//   void _previousStory() {
+//     if (_currentStoryIndex > 0) {
+//       // Go to previous story of current user
+//       setState(() {
+//         _currentStoryIndex--;
+//       });
+//       _animationController.forward();
+//     } else if (_currentUserIndex > 0) {
+//       // Go to last story of previous user
+//       setState(() {
+//         _currentUserIndex--;
+//         _currentStoryIndex = widget.users[_currentUserIndex].stories.length - 1;
+//       });
+//       _userPageController.animateToPage(
+//         _currentUserIndex,
+//         duration: const Duration(milliseconds: 500),
+//         curve: Curves.easeInOut,
+//       );
+//       _animationController.forward();
+//     } else {
+//       // Beginning of all stories
+//       Navigator.pop(context);
+//     }
+//   }
+
+//   void _onHoldStart() {
+//     // Pause the animation when user holds down
+//     if (!_isPaused) {
+//       _isPaused = true;
+//       _animationController.stop();
+//     }
+//   }
+
+//   void _onHoldEnd() {
+//     // Resume the animation when user releases hold
+//     if (_isPaused) {
+//       _isPaused = false;
+//       _animationController.forward();
+//     }
+//   }
+
+//   void _onSwipeDown() {
+//     // Close the story view when user swipes down
+//     Navigator.pop(context);
+//   }
+
+//   void _onSwipeLeft() {
+//     // Go to next user's stories with animation
+//     if (_currentUserIndex < widget.users.length - 1) {
+//       setState(() {
+//         _currentUserIndex++;
+//         _currentStoryIndex = 0;
+//       });
+//       _userPageController.animateToPage(
+//         _currentUserIndex,
+//         duration: const Duration(milliseconds: 500),
+//         curve: Curves.easeInOut,
+//       );
+//       _animationController.reset();
+//       _animationController.forward();
+//     }
+//   }
+
+//   void _onSwipeRight() {
+//     // Go to previous user's stories with animation
+//     if (_currentUserIndex > 0) {
+//       setState(() {
+//         _currentUserIndex--;
+//         _currentStoryIndex = 0;
+//       });
+//       _userPageController.animateToPage(
+//         _currentUserIndex,
+//         duration: const Duration(milliseconds: 500),
+//         curve: Curves.easeInOut,
+//       );
+//       _animationController.reset();
+//       _animationController.forward();
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Colors.black,
+//       body: GestureDetector(
+//         onTapDown: (details) {
+//           final screenWidth = MediaQuery.of(context).size.width;
+//           final dx = details.globalPosition.dx;
+
+//           if (dx < screenWidth / 3) {
+//             // Left tap
+//             _animationController.reset();
+//             _previousStory();
+//           } else if (dx > 2 * screenWidth / 3) {
+//             // Right tap
+//             _animationController.reset();
+//             _nextStory();
+//           }
+//           // If tapped in the middle, do nothing
+//         },
+//         onLongPressStart: (_) => _onHoldStart(),
+//         onLongPressEnd: (_) => _onHoldEnd(),
+//         child: PageView.builder(
+//           controller: _userPageController,
+//           physics:
+//               const NeverScrollableScrollPhysics(), // Disable default swipe
+//           itemCount: widget.users.length,
+//           onPageChanged: (index) {
+//             setState(() {
+//               _currentUserIndex = index;
+//               _currentStoryIndex = 0;
+//             });
+//             _animationController.reset();
+//             _animationController.forward();
+//           },
+//           itemBuilder: (context, userIndex) {
+//             final User currentUser = widget.users[userIndex];
+//             final Story currentStory = userIndex == _currentUserIndex
+//                 ? currentUser.stories[_currentStoryIndex]
+//                 : currentUser.stories[0];
+
+//             return GestureDetector(
+//               // Add vertical swipe detection
+//               onVerticalDragEnd: (details) {
+//                 if (details.primaryVelocity! > 300) {
+//                   _onSwipeDown();
+//                 }
+//               },
+//               // Add horizontal swipe detection
+//               onHorizontalDragEnd: (details) {
+//                 if (details.primaryVelocity! < -300) {
+//                   _onSwipeLeft();
+//                 } else if (details.primaryVelocity! > 300) {
+//                   _onSwipeRight();
+//                 }
+//               },
+//               child: Stack(
+//                 children: [
+//                   // Story content
+//                   Container(
+//                     decoration: BoxDecoration(
+//                       image: DecorationImage(
+//                         image: NetworkImage(currentStory.imageUrl),
+//                         fit: BoxFit.cover,
+//                       ),
+//                     ),
+//                   ),
+
+//                   // Progress indicator for current user's stories only
+//                   Positioned(
+//                     top: 40,
+//                     left: 10,
+//                     right: 10,
+//                     child: Row(
+//                       children: List.generate(
+//                         currentUser.stories.length,
+//                         (i) => Expanded(
+//                           child: Container(
+//                             height: 2,
+//                             margin: const EdgeInsets.symmetric(horizontal: 2),
+//                             decoration: BoxDecoration(
+//                               color: Colors.grey.withOpacity(0.5),
+//                               borderRadius: BorderRadius.circular(1),
+//                             ),
+//                             child: userIndex == _currentUserIndex &&
+//                                     i == _currentStoryIndex
+//                                 ? AnimatedBuilder(
+//                                     animation: _animationController,
+//                                     builder: (context, child) {
+//                                       return FractionallySizedBox(
+//                                         widthFactor: _animationController.value,
+//                                         alignment: Alignment.centerLeft,
+//                                         child: Container(
+//                                           color: Colors.white,
+//                                         ),
+//                                       );
+//                                     },
+//                                   )
+//                                 : userIndex == _currentUserIndex &&
+//                                         i < _currentStoryIndex
+//                                     ? Container(color: Colors.white)
+//                                     : Container(),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+
+//                   // User info
+//                   Positioned(
+//                     top: 50,
+//                     left: 10,
+//                     child: Row(
+//                       children: [
+//                         CircleAvatar(
+//                           radius: 15,
+//                           backgroundImage: NetworkImage(currentUser.userImage),
+//                         ),
+//                         const SizedBox(width: 10),
+//                         Text(
+//                           currentUser.username,
+//                           style: const TextStyle(
+//                             color: Colors.white,
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                         const SizedBox(width: 10),
+//                         Text(
+//                           '${currentStory.timeAgo} ago',
+//                           style: const TextStyle(
+//                             color: Colors.white70,
+//                             fontSize: 12,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+
+//                   // Close button
+//                   Positioned(
+//                     top: 50,
+//                     right: 10,
+//                     child: GestureDetector(
+//                       onTap: () {
+//                         Navigator.pop(context);
+//                       },
+//                       child: const Icon(
+//                         Icons.close,
+//                         color: Colors.white,
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+// }
+
 // // Custom page transition for 3D cube effect
 // class CubePageRoute extends PageRouteBuilder {
 //   final Widget enterPage;

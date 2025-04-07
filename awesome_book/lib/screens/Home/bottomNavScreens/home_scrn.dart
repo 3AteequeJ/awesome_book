@@ -5,6 +5,8 @@ import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/models/posts_model.dart';
 import 'package:awesome_book/models/stories_model.dart';
 import 'package:awesome_book/try/camera.dart';
+import 'package:awesome_book/utils/sharedPrefs.dart';
+import 'package:awesome_book/widgets/mytext.dart';
 import 'package:awesome_book/widgets/storiesCircle.dart';
 import 'package:flutter/material.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
@@ -29,8 +31,9 @@ class _Home_scrnState extends State<Home_scrn> {
   @override
   void initState() {
     super.initState();
+
     fetchPosts_async();
-    // fetchStories_async();
+    fetchStories_async();
 
     // Attach scroll listener for infinite scroll
     _scrollController.addListener(() {
@@ -49,6 +52,7 @@ class _Home_scrnState extends State<Home_scrn> {
     });
     // fetchStories_async();
     await fetchPosts_async();
+    fetchStories_async();
   }
 
   Future<void> fetchPosts_async() async {
@@ -79,7 +83,7 @@ class _Home_scrnState extends State<Home_scrn> {
                   is_liked: p['is_liked'].toString(),
                 ))
             .toList();
-
+        fetchStories_async();
         setState(() {
           PM.addAll(newPosts);
           page++;
@@ -93,7 +97,7 @@ class _Home_scrnState extends State<Home_scrn> {
   }
 
   Future<void> fetchStories_async() async {
-    print("Fetching stories...");
+    debugPrint("Fetching stories...");
     // List<StoryUser> story_users = [];
     if (isLoading) return;
     setState(() => isLoading = true);
@@ -104,27 +108,32 @@ class _Home_scrnState extends State<Home_scrn> {
     try {
       var res = await http.post(url, body: {'user_id': glb.userDetails.id});
       print("pot bdy = ${res.body}");
+      List l1 = jsonDecode(res.body);
       if (res.statusCode == 200) {
-        for (var i = 0; i < 5; i++) {
-          var story = jsonDecode(res.body)[i];
+        for (var i = 0; i < l1.length; i++) {
+          var story = l1[i];
+          String user_id = story['user_id'].toString();
           String username = story['username'].toString();
           String userImage = story['userImage'].toString();
 
           List<Story> stories = [];
-
-          for (var j = 0; j < 5; j++) {
-            var storyData = jsonDecode(res.body)[i]['stories'][j];
+          List l2 = l1[i]['stories'];
+          for (var j = 0; j < l2.length; j++) {
+            var storyData = l2[j];
             stories.add(Story(
-              imageUrl: glb.API.baseURL +
-                  "public/" +
-                  storyData['imageUrl'].toString(),
-              timeAgo: storyData['timestamp'].toString(),
+              imageUrl:
+                  glb.API.baseURL + "public" + storyData['imageUrl'].toString(),
+              timeAgo: storyData['timeAgo'].toString(),
+              storyId: storyData['story_id'].toString(),
+              storyType: storyData['type'].toString(),
+              viewed: storyData['viewed'].toString(),
             ));
           }
           SU.add(StoryUser(
             username: username,
-            userImage: glb.API.baseURL + "public/" + userImage,
+            userImage: glb.API.baseURL + userImage,
             stories: stories,
+            user_id: user_id,
           ));
         }
         // stories.add(StoryUser(
@@ -147,6 +156,21 @@ class _Home_scrnState extends State<Home_scrn> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xfff8faf8),
+        title: ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [Colors.blue, Colors.purple, Colors.red], // Gradient colors
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: Text(
+            "Awesomebook",
+            style: TextStyle(
+              fontSize: 18,
+              fontFamily: 'igronte',
+              color: Colors.white,
+            ),
+          ),
+        ),
         centerTitle: true,
         elevation: 1.0,
         leading: IconButton(
@@ -181,7 +205,11 @@ class _Home_scrnState extends State<Home_scrn> {
             child: IconButton(
               icon: Icon(Icons.send),
               onPressed: () {
-                Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
+                // Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
+                // print("Send button pressed");
+                fetchStories_async();
+                // saveUser(glb.newUser(name: 'atq', age: 1));
+                // getMeMyUser();
               },
             ),
           ),
@@ -201,6 +229,7 @@ class _Home_scrnState extends State<Home_scrn> {
                   return StoriesCircle(
                     name: 'Story $index',
                     idx: index,
+                    storyUsers: SU,
                   );
                 },
               ),

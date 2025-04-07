@@ -20,6 +20,80 @@ class userDetails {
   static String bio = "";
 }
 
+class newUser {
+  late String id;
+  late String name;
+  late String user_name;
+  late String email_id;
+  late String profile_img;
+  late String pswd;
+  late String verified;
+  late String status;
+  late String open;
+  late String dateTime;
+  late String no_posts;
+  late String no_follower;
+  late String no_following;
+  late String bio;
+
+  newUser({
+    required this.id,
+    required this.name,
+    required this.user_name,
+    required this.email_id,
+    required this.profile_img,
+    required this.pswd,
+    required this.verified,
+    required this.status,
+    required this.open,
+    required this.dateTime,
+    required this.no_posts,
+    required this.no_follower,
+    required this.no_following,
+    required this.bio,
+  });
+
+  // Convert object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'user_name': user_name,
+      'email_id': email_id,
+      'profile_img': profile_img,
+      'pswd': pswd,
+      'verified': verified,
+      'status': status,
+      'open': open,
+      'dateTime': dateTime,
+      'no_posts': no_posts,
+      'no_follower': no_follower,
+      'no_following': no_following,
+      'bio': bio,
+    };
+  }
+
+  // Convert JSON to object
+  factory newUser.fromJson(Map<String, dynamic> json) {
+    return newUser(
+      id: json['id'],
+      name: json['name'],
+      user_name: json['user_name'],
+      email_id: json['email_id'],
+      profile_img: json['profile_img'],
+      pswd: json['pswd'],
+      verified: json['verified'],
+      status: json['status'],
+      open: json['open'],
+      dateTime: json['dateTime'],
+      no_posts: json['no_posts'],
+      no_follower: json['no_follower'],
+      no_following: json['no_following'],
+      bio: json['bio'],
+    );
+  }
+}
+
 class API {
   static const String baseURL = "https://awesomebook.in/awesomebookbackend/";
   static const String Login = baseURL + "login";
@@ -82,17 +156,21 @@ getDateTime(String dt) {
 }
 
 getDuration(String dt) {
-  DateTime now = DateTime.now();
-  DateTime pastdate = DateTime.parse(dt);
-  Duration duration = now.difference(pastdate);
-  if (duration.inSeconds < 60) {
-    return '${duration.inSeconds} seconds ago';
-  } else if (duration.inMinutes < 60) {
-    return '${duration.inMinutes} minutes ago';
-  } else if (duration.inHours < 24) {
-    return '${duration.inHours} hours ago';
-  } else {
-    return '${duration.inDays} days ago';
+  try {
+    DateTime now = DateTime.now();
+    DateTime pastdate = DateTime.parse(dt);
+    Duration duration = now.difference(pastdate);
+    if (duration.inSeconds < 60) {
+      return '${duration.inSeconds} seconds ago';
+    } else if (duration.inMinutes < 60) {
+      return '${duration.inMinutes} minutes ago';
+    } else if (duration.inHours < 24) {
+      return '${duration.inHours} hours ago';
+    } else {
+      return '${duration.inDays} days ago';
+    }
+  } catch (e) {
+    return "Now";
   }
 }
 

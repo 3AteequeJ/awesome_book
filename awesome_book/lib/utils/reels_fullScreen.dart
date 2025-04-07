@@ -31,6 +31,8 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
   bool _isBookmarked = false;
   bool _showComments = false;
   double _videoProgress = 0.0;
+  double opacity = 0;
+  TextEditingController _commentController = TextEditingController();
 
   // Mock data for user account and comments
   // final Map<String, dynamic> _accountData = {
@@ -253,6 +255,34 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
     });
   }
 
+  likePost_async(Post_model post) async {
+    Uri url = Uri.parse(glb.API.AddLike);
+
+    var res = await http.post(url, body: {
+      'user_id': glb.userDetails.id,
+      'post_id': post.id,
+    });
+
+    print(res.body);
+  }
+
+  void onDoubleTap(Post_model post) {
+    setState(() {
+      // isLiked = true;
+      opacity = 1;
+    });
+    if (post.is_liked == '0') {
+      likePost_async(post);
+    }
+
+    // Fade out the heart icon after a short delay
+    Future.delayed(Duration(milliseconds: 500), () {
+      setState(() {
+        opacity = 0;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -262,26 +292,25 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
           // Video Player
           GestureDetector(
             onTap: _togglePlayPause,
+            onDoubleTap: () {
+              onDoubleTap(widget.reel);
+            },
             child: Stack(
               alignment: Alignment.center,
               children: [
-                _isInitialized && !_hasError
-                    ? Center(
-                        child: AspectRatio(
-                          aspectRatio: _controller.value.aspectRatio,
-                          child: FittedBox(
-                            fit: BoxFit.cover,
-                            child: SizedBox(
-                              width: _controller.value.size.width,
-                              height: _controller.value.size.height,
-                              child: VideoPlayer(_controller),
-                            ),
-                          ),
-                        ),
-                      )
-                    : _hasError
-                        ? _buildErrorWidget()
-                        : _buildLoadingWidget(),
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: _controller!.value.aspectRatio,
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _controller.value.size.width,
+                        height: _controller.value.size.height,
+                        child: VideoPlayer(_controller),
+                      ),
+                    ),
+                  ),
+                ),
                 if (!_isPlaying)
                   Icon(
                     Icons.play_arrow,
@@ -292,13 +321,14 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
             ),
           ),
 
-          // Video Progress Bar
+          // Video Progress Bar (only for current video)
+
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: Container(
-              height: 30, // Increased touch target area
+              height: 30,
               color: Colors.transparent,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -314,16 +344,13 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                       overlayColor: Colors.white.withOpacity(0.3),
                     ),
                     child: Slider(
-                      value: _videoProgress.clamp(
-                          0.0, 1.0), // Ensure value is within valid range
+                      value: _videoProgress.clamp(0.0, 1.0),
                       onChanged: (value) {
-                        // Just update the UI during drag
                         setState(() {
                           _videoProgress = value;
                         });
                       },
                       onChangeEnd: (value) {
-                        // Only perform the actual seek when the user finishes dragging
                         _seekVideo(value);
                       },
                     ),
@@ -333,14 +360,7 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
             ),
           ),
 
-          // Account Info (Top)
-          // Positioned(
-          //   top: 40,
-          //   left: 10,
-          //   right: 10,
-          //   child: ),
-
-          // Caption and Music (Bottom Left)
+          // Caption and User Info (Bottom Left)
           Positioned(
             bottom: 80,
             left: 10,
@@ -398,26 +418,6 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 10),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.music_note,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                    SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        "_accountData['music']",
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -440,7 +440,7 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                   Column(
                     children: [
                       IconButton(
-                        icon: _isLiked
+                        icon: widget.reel.is_liked == '1'
                             ? Icon(Icons.favorite, color: Colors.red, size: 28)
                             : Icon(CupertinoIcons.heart,
                                 color: Colors.white, size: 24),
@@ -480,10 +480,6 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                           // Add share functionality
                         },
                       ),
-                      // Text(
-                      //   '342',
-                      //   style: TextStyle(color: Colors.white, fontSize: 12),
-                      // ),
                     ],
                   ),
                   SizedBox(height: 15),
@@ -509,6 +505,19 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
               ),
             ),
           ),
+
+          // Loading indicator at the bottom for infinite scroll
+          // if ( isLoading)
+          // Positioned(
+          //   bottom: 10,
+          //   left: 0,
+          //   right: 0,
+          //   child: Center(
+          //     child: CircularProgressIndicator(
+          //       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          //     ),
+          //   ),
+          // ),
 
           // Comments Section (Slide Up)
           if (_showComments)
@@ -581,90 +590,72 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
 
                               // Comments List
                               Expanded(
-                                child: ListView.builder(
-                                  itemCount: comments.length,
-                                  itemBuilder: (context, index) {
-                                    final comment = comments[index];
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 15,
-                                        vertical: 10,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 14,
-                                            backgroundImage: NetworkImage(
-                                                glb.API.baseURL +
-                                                    comment.user_img),
-                                          ),
-                                          SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
+                                child: comments.isEmpty
+                                    ? Center(
+                                        child: Text(
+                                          'No comments yet',
+                                          style:
+                                              TextStyle(color: Colors.white70),
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        itemCount: comments.length,
+                                        itemBuilder: (context, index) {
+                                          final comment = comments[index];
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 15,
+                                              vertical: 10,
+                                            ),
+                                            child: Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                RichText(
-                                                  text: TextSpan(
+                                                CircleAvatar(
+                                                  radius: 14,
+                                                  backgroundImage: NetworkImage(
+                                                      glb.API.baseURL +
+                                                          comment.user_img),
+                                                ),
+                                                SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      TextSpan(
-                                                        text:
-                                                            ' ${comment.comment}',
+                                                      Text(
+                                                        comment.user_name,
                                                         style: TextStyle(
                                                           color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 3),
+                                                      Text(
+                                                        comment.comment,
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 5),
+                                                      Text(
+                                                        comment.date_time,
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 12,
                                                         ),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
-                                                SizedBox(height: 5),
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      comment.user_name,
-                                                      style: TextStyle(
-                                                        color: Colors.grey,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 15),
-                                                    // Text(
-                                                    //   '${comment['likes']} likes',
-                                                    //   style: TextStyle(
-                                                    //     color: Colors.grey,
-                                                    //     fontSize: 12,
-                                                    //   ),
-                                                    // ),
-                                                    // SizedBox(width: 15),
-                                                    // Text(
-                                                    //   'Reply',
-                                                    //   style: TextStyle(
-                                                    //     color: Colors.grey,
-                                                    //     fontSize: 12,
-                                                    //   ),
-                                                    // ),
-                                                  ],
-                                                ),
                                               ],
                                             ),
-                                          ),
-                                          // IconButton(
-                                          //   icon: Icon(
-                                          //     CupertinoIcons.heart,
-                                          //     color: Colors.grey,
-                                          //     size: 14,
-                                          //   ),
-                                          //   onPressed: () {
-                                          //     // Like comment
-                                          //   },
-                                          // ),
-                                        ],
+                                          );
+                                        },
                                       ),
-                                    );
-                                  },
-                                ),
                               ),
 
                               // Comment Input
@@ -681,6 +672,7 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                                     SizedBox(width: 10),
                                     Expanded(
                                       child: TextField(
+                                        controller: _commentController,
                                         decoration: InputDecoration(
                                           hintText: 'Add a comment...',
                                           hintStyle:
@@ -693,6 +685,15 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                                     TextButton(
                                       onPressed: () {
                                         // Post comment
+                                        if (_commentController
+                                            .text.isNotEmpty) {
+                                          // In a real app, you would send this to your API
+                                          print(
+                                              'Posted comment: ${_commentController.text}');
+
+                                          uploadComment(widget.reel,
+                                              _commentController.text.trim());
+                                        }
                                       },
                                       child: Text(
                                         'Post',
@@ -714,9 +715,59 @@ class _ReelsFull_scrnState extends State<ReelsFull_scrn> {
                 ),
               ),
             ),
+
+          Positioned.fill(
+            child: Center(
+              child: AnimatedOpacity(
+                duration: Duration(milliseconds: 300),
+                opacity: opacity,
+                child: Icon(
+                  Icons.favorite,
+                  color: Colors.red,
+                  size: 100,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  uploadComment(Post_model post, String comment) async {
+    Uri url = Uri.parse(glb.API.uploadComment);
+
+    var newComment = CommentsModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID
+      user_id: glb.userDetails.id,
+      post_id: post.id,
+      date_time: DateTime.now().toString(), // Temporary timestamp
+      comment: comment,
+      user_name: glb.userDetails.name, // Get from user details
+      user_img: glb.userDetails.profile_img, // Get from user details
+    );
+
+    setState(() {
+      comments.insert(0, newComment); // Add the new comment at the top
+      post.no_comments = (int.parse(post.no_comments) + 1).toString();
+      _showComments = false;
+      _showComments = true;
+    });
+
+    var res = await http.post(url, body: {
+      'post_id': post.id,
+      'user_id': glb.userDetails.id,
+      'comments': newComment.comment,
+    });
+
+    print(res.body);
+
+    if (res.body != '1') {
+      // If API call fails, remove the temporary comment
+      setState(() {
+        comments.add(newComment);
+      });
+    }
   }
 
   Widget _buildLoadingWidget() {

@@ -1,4 +1,5 @@
 import 'package:awesome_book/Route/router.dart';
+import 'package:awesome_book/widgets/mytext.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_book/utils/global.dart' as glb;
@@ -16,7 +17,7 @@ class _Profile_scrnState extends State<Profile_scrn> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(glb.userDetails.user_name),
+        title: Txt(text: glb.userDetails.user_name),
         actions: [
           // IconButton(
           //   icon: Icon(Icons.menu),

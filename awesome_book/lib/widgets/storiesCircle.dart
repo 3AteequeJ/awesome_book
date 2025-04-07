@@ -5,15 +5,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:awesome_book/utils/global.dart' as glb;
 
 class StoriesCircle extends StatefulWidget {
   const StoriesCircle({
     super.key,
     required this.name,
     required this.idx,
+    required this.storyUsers,
   });
   final String name;
   final int idx;
+  final List<StoryUser> storyUsers;
   @override
   State<StoriesCircle> createState() => _StoriesCircleState();
 }
@@ -34,22 +37,26 @@ class _StoriesCircleState extends State<StoriesCircle> {
     return GestureDetector(
       // onTap: _openFullScreenImage,
       onTap: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => StoryView(
-              initialUserIndex: widget.idx,
-              users: dummyUsers,
-            ),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-          ),
-        );
+        print("wwwwwwwwwww");
+        print(
+            widget.storyUsers[widget.idx].stories.any((s) => s.viewed == '0'));
+        print("\n\n\n");
+        // Navigator.push(
+        //   context,
+        //   PageRouteBuilder(
+        //     pageBuilder: (context, animation, secondaryAnimation) => StoryView(
+        //       initialUserIndex: widget.idx,
+        //       users: widget.storyUsers,
+        //     ),
+        //     transitionsBuilder:
+        //         (context, animation, secondaryAnimation, child) {
+        //       return FadeTransition(
+        //         opacity: animation,
+        //         child: child,
+        //       );
+        //     },
+        //   ),
+        // );
       },
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -63,7 +70,10 @@ class _StoriesCircleState extends State<StoriesCircle> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [Colors.blue, Colors.purple, Colors.red],
+                      colors: widget.storyUsers[widget.idx].stories
+                              .any((s) => s.viewed == '0')
+                          ? [Colors.blue, Colors.purple, Colors.red]
+                          : [Colors.black, Colors.grey],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -71,15 +81,22 @@ class _StoriesCircleState extends State<StoriesCircle> {
                   child: Padding(
                     padding: EdgeInsets.all(8.sp),
                     child: Container(
+                      height: 20.w,
+                      width: 20.w,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Theme.of(context).scaffoldBackgroundColor,
+                        image: DecorationImage(
+                            fit: BoxFit.cover,
+                            image: NetworkImage(
+                              widget.storyUsers[widget.idx].userImage,
+                            )),
                       ),
                     ),
                   ),
                 ),
               ),
-              Txt(text: widget.name == "Story 0" ? "Your story" : widget.name),
+              Txt(text: widget.storyUsers[widget.idx].username.trim()),
             ],
           ),
         ),
@@ -405,8 +422,10 @@ class _StoryViewState extends State<StoryView>
                   Container(
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: NetworkImage(currentStory.imageUrl),
-                        fit: BoxFit.cover,
+                        image: NetworkImage(
+                          currentStory.imageUrl,
+                        ),
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
@@ -471,7 +490,7 @@ class _StoryViewState extends State<StoryView>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          '${currentStory.timeAgo} ago',
+                          '${glb.getDuration(currentStory.timeAgo)}',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -506,117 +525,117 @@ class _StoryViewState extends State<StoryView>
 }
 
 // Dummy data with users and their stories
-final List<StoryUser> dummyUsers = [
-  StoryUser(
-    username: 'your_story',
-    userImage: 'https://randomuser.me/api/portraits/men/1.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6',
-        timeAgo: '1h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
-        timeAgo: '2h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1533105079780-92b9be482077',
-        timeAgo: '3h',
-      ),
-    ],
-  ),
-  StoryUser(
-    username: 'john_doe',
-    userImage: 'https://randomuser.me/api/portraits/men/2.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e',
-        timeAgo: '3h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1514890547357-a9ee288728e0',
-        timeAgo: '4h',
-      ),
-    ],
-  ),
-  StoryUser(
-    username: 'jane_smith',
-    userImage: 'https://randomuser.me/api/portraits/women/1.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1514315384763-ba401779410f',
-        timeAgo: '5h',
-      ),
-    ],
-  ),
-  StoryUser(
-    username: 'mike_johnson',
-    userImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1496440737103-cd596325d314',
-        timeAgo: '8h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1527203561188-dae1bc1a417f',
-        timeAgo: '9h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1534103362078-d07e750bd0c4',
-        timeAgo: '10h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806',
-        timeAgo: '11h',
-      ),
-    ],
-  ),
-  StoryUser(
-    username: 'emily_wilson',
-    userImage: 'https://randomuser.me/api/portraits/women/2.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1527203561188-dae1bc1a417f',
-        timeAgo: '10h',
-      ),
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1534103362078-d07e750bd0c4',
-        timeAgo: '11h',
-      ),
-    ],
-  ),
-  StoryUser(
-    username: 'alex_brown',
-    userImage: 'https://randomuser.me/api/portraits/men/4.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1534103362078-d07e750bd0c4',
-        timeAgo: '16h',
-      ),
-    ],
-  ),
-  StoryUser(
-    username: 'sarah_davis',
-    userImage: 'https://randomuser.me/api/portraits/women/3.jpg',
-    stories: [
-      Story(
-        imageUrl:
-            'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806',
-        timeAgo: '22h',
-      ),
-    ],
-  ),
-];
+// final List<StoryUser> dummyUsers = [
+//   StoryUser(
+//     username: 'your_story',
+//     userImage: 'https://randomuser.me/api/portraits/men/1.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6',
+//         timeAgo: '1h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
+//         timeAgo: '2h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1533105079780-92b9be482077',
+//         timeAgo: '3h',
+//       ),
+//     ],
+//   ),
+//   StoryUser(
+//     username: 'john_doe',
+//     userImage: 'https://randomuser.me/api/portraits/men/2.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e',
+//         timeAgo: '3h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1514890547357-a9ee288728e0',
+//         timeAgo: '4h',
+//       ),
+//     ],
+//   ),
+//   StoryUser(
+//     username: 'jane_smith',
+//     userImage: 'https://randomuser.me/api/portraits/women/1.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1514315384763-ba401779410f',
+//         timeAgo: '5h',
+//       ),
+//     ],
+//   ),
+//   StoryUser(
+//     username: 'mike_johnson',
+//     userImage: 'https://randomuser.me/api/portraits/men/3.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1496440737103-cd596325d314',
+//         timeAgo: '8h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1527203561188-dae1bc1a417f',
+//         timeAgo: '9h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1534103362078-d07e750bd0c4',
+//         timeAgo: '10h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806',
+//         timeAgo: '11h',
+//       ),
+//     ],
+//   ),
+//   StoryUser(
+//     username: 'emily_wilson',
+//     userImage: 'https://randomuser.me/api/portraits/women/2.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1527203561188-dae1bc1a417f',
+//         timeAgo: '10h',
+//       ),
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1534103362078-d07e750bd0c4',
+//         timeAgo: '11h',
+//       ),
+//     ],
+//   ),
+//   StoryUser(
+//     username: 'alex_brown',
+//     userImage: 'https://randomuser.me/api/portraits/men/4.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1534103362078-d07e750bd0c4',
+//         timeAgo: '16h',
+//       ),
+//     ],
+//   ),
+//   StoryUser(
+//     username: 'sarah_davis',
+//     userImage: 'https://randomuser.me/api/portraits/women/3.jpg',
+//     stories: [
+//       Story(
+//         imageUrl:
+//             'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806',
+//         timeAgo: '22h',
+//       ),
+//     ],
+//   ),
+// ];

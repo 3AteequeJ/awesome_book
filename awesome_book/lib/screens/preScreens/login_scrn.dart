@@ -3,6 +3,7 @@ import 'package:awesome_book/utils/global.dart' as glb;
 import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/screens/preScreens/signUp_scrn.dart';
 import 'package:awesome_book/utils/mybutton.dart';
+import 'package:awesome_book/utils/sharedPrefs.dart';
 import 'package:awesome_book/widgets/mytext.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -265,6 +266,15 @@ class _Login_scrnState extends State<Login_scrn> {
     );
   }
 
+  getMeMyUser() async {
+    glb.newUser? user = await getUser();
+    if (user != null) {
+      print("Name: ${user.name},");
+    } else {
+      print("No user data found");
+    }
+  }
+
   Login_async(String mobile_number, String password) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -274,14 +284,14 @@ class _Login_scrnState extends State<Login_scrn> {
         'user_data': mobile_number,
       });
 
-      print(res.statusCode);
-      print(res.body);
+      // print(res.statusCode);
+      // print(res.body);
       var bdy = jsonDecode(res.body);
 
       var rcvd_pswd = bdy[0]['password'];
-      print("password = $rcvd_pswd");
+      // print("password = $rcvd_pswd");
       if (password.toString() == rcvd_pswd.toString()) {
-        print("Correct pswd");
+        // print("Correct pswd");
 
         setState(() {
           glb.userDetails.id = bdy[0]['id'].toString();
@@ -301,7 +311,29 @@ class _Login_scrnState extends State<Login_scrn> {
 
           // glb.userDetails.refer_id = bdy[0]['refer_id'].toString();
         });
+        print('here');
+        await saveUser(glb.newUser(
+            id: bdy[0]['id'].toString(),
+            name: bdy[0]['name'].toString(),
+            user_name: bdy[0]['user_name'].toString(),
+            email_id: bdy[0]['email_id'].toString(),
+            profile_img: bdy[0]['profile_image'].toString(),
+            verified: bdy[0]['verified'].toString(),
+            status: bdy[0]['status'].toString(),
+            open: bdy[0]['open'].toString(),
+            dateTime: bdy[0]['timestamp'].toString(),
+            no_posts: bdy[0]['total_posts'].toString(),
+            no_follower: bdy[0]['total_followers'].toString(),
+            no_following: bdy[0]['total_following'].toString(),
+            bio: bdy[0]['bio'].toString(),
+            pswd: bdy[0]['password'].toString()));
+        print('here 2 ');
+        // var b = await getUser();
+        getMeMyUser();
+        print('here 3');
+        // print("sp id = ${b!.id}");
 
+        print("here 2");
         await prefs.setString('sp_userID', '${glb.userDetails.id}');
         await prefs.setString('sp_userNm', '${glb.userDetails.user_name}');
         await prefs.setString('sp_Name', '${glb.userDetails.name}');
@@ -324,7 +356,7 @@ class _Login_scrnState extends State<Login_scrn> {
         //     builder: (context) => const BottomNavBar_scrn(),
         //   ),
         // );
-        Navigator.pushNamed(context, RouteGenerator.rt_home);
+        // Navigator.pushNamed(context, RouteGenerator.rt_home);
       } else {
         print("Wrong pswd");
         glb.errorToast(context, "Wrong pswd");
