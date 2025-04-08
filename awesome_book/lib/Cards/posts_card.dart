@@ -98,8 +98,30 @@ class _Posts_cardState extends State<Posts_card> {
       'user_id': glb.userDetails.id,
       'post_id': widget.posts.id,
     });
-
+    setState(() {
+      if (widget.posts.is_liked == '0') {
+        widget.posts.no_likes =
+            (int.parse(widget.posts.no_likes) + 1).toString();
+      }
+      widget.posts.is_liked = '1';
+    });
     print(res.body);
+  }
+
+  unlike() async {
+    Uri url = Uri.parse(glb.API.unlike_post);
+
+    var res = await http.post(url, body: {
+      'user_id': glb.userDetails.id,
+      'post_id': widget.posts.id,
+    });
+    setState(() {
+      if (widget.posts.is_liked == '1') {
+        widget.posts.no_likes =
+            (int.parse(widget.posts.no_likes) - 1).toString();
+      }
+      widget.posts.is_liked = '0';
+    });
   }
 
   void onDoubleTap() {
@@ -138,6 +160,7 @@ class _Posts_cardState extends State<Posts_card> {
                       NetworkImage(glb.API.baseURL + widget.posts.profileImage),
                 ),
               ),
+              Txt(text: widget.posts.id),
               Text(widget.posts.user_name,
                   style: TextStyle(fontWeight: FontWeight.bold)),
               Spacer(),
@@ -229,17 +252,28 @@ class _Posts_cardState extends State<Posts_card> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Txt(text: widget.posts.caption),
                 Row(
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          (widget.posts.is_liked == '1')
-                              ? CupertinoIcons.heart_fill
-                              : CupertinoIcons.heart,
-                          color: (widget.posts.is_liked == '1')
-                              ? Colors.red
-                              : Colors.grey,
+                        InkWell(
+                          onTap: () {
+                            print("he");
+                            if (widget.posts.is_liked == '0') {
+                              likePost_async();
+                            } else {
+                              unlike();
+                            }
+                          },
+                          child: Icon(
+                            (widget.posts.is_liked == '1')
+                                ? CupertinoIcons.heart_fill
+                                : CupertinoIcons.heart,
+                            color: (widget.posts.is_liked == '1')
+                                ? Colors.red
+                                : Colors.grey,
+                          ),
                         ),
                         Container(
                           height: 2.h,
@@ -279,43 +313,45 @@ class _Posts_cardState extends State<Posts_card> {
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Container(
-                      width: 15.w,
-                      height: 2.h,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 2.w,
-                            backgroundColor: Colors.red.shade300,
-                          ),
-                          CircleAvatar(
-                            radius: 2.w,
-                            backgroundColor: Colors.yellow.shade300,
-                          ),
-                          CircleAvatar(
-                            radius: 2.w,
-                            backgroundColor: Colors.green.shade300,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(' Liked by atq_J and 12 others'),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Txt(
-                      text: 'atq_J',
-                      fntWt: FontWeight.bold,
-                    ),
-                    SizedBox(
-                      width: 1.w,
-                    ),
-                    Txt(text: widget.posts.caption)
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Container(
+                //       width: 15.w,
+                //       height: 2.h,
+                //       child: Row(
+                //         children: [
+                //           CircleAvatar(
+                //             radius: 2.w,
+                //             backgroundColor: Colors.red.shade300,
+                //           ),
+                //           CircleAvatar(
+                //             radius: 2.w,
+                //             backgroundColor: Colors.yellow.shade300,
+                //           ),
+                //           CircleAvatar(
+                //             radius: 2.w,
+                //             backgroundColor: Colors.green.shade300,
+                //           ),
+                //         ],
+                //       ),
+                //     ),
+                //     Text(' Liked by atq_J and 12 others'),
+                //   ],
+                // ),
+
+                // Row(
+                //   children: [
+                //     // Txt(
+                //     //   text: 'atq_J',
+                //     //   fntWt: FontWeight.bold,
+                //     // ),
+                //     SizedBox(
+                //       width: 1.w,
+                //     ),
+                //     Txt(text: widget.posts.caption)
+                //   ],
+                // ),
+
                 Txt(
                     text: glb.getDuration(widget.posts.dateTime),
                     fntWt: FontWeight.w500),

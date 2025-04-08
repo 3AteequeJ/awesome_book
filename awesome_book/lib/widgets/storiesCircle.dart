@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:awesome_book/utils/global.dart' as glb;
+import 'package:http/http.dart' as http;
 
 class StoriesCircle extends StatefulWidget {
   const StoriesCircle({
@@ -37,26 +38,26 @@ class _StoriesCircleState extends State<StoriesCircle> {
     return GestureDetector(
       // onTap: _openFullScreenImage,
       onTap: () {
-        print("wwwwwwwwwww");
-        print(
-            widget.storyUsers[widget.idx].stories.any((s) => s.viewed == '0'));
-        print("\n\n\n");
-        // Navigator.push(
-        //   context,
-        //   PageRouteBuilder(
-        //     pageBuilder: (context, animation, secondaryAnimation) => StoryView(
-        //       initialUserIndex: widget.idx,
-        //       users: widget.storyUsers,
-        //     ),
-        //     transitionsBuilder:
-        //         (context, animation, secondaryAnimation, child) {
-        //       return FadeTransition(
-        //         opacity: animation,
-        //         child: child,
-        //       );
-        //     },
-        //   ),
-        // );
+        // print("wwwwwwwwwww");
+        // print(
+        //     widget.storyUsers[widget.idx].stories.any((s) => s.viewed == '0'));
+        // print("\n\n\n");
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => StoryView(
+              initialUserIndex: widget.idx,
+              users: widget.storyUsers,
+            ),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          ),
+        );
       },
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -231,7 +232,7 @@ class _StoryViewState extends State<StoryView>
     _userPageController = PageController(initialPage: _currentUserIndex);
     _animationController =
         AnimationController(vsync: this, duration: const Duration(seconds: 5));
-
+    ViewStory_async();
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _animationController.reset();
@@ -240,6 +241,19 @@ class _StoryViewState extends State<StoryView>
     });
 
     _loadStory();
+  }
+
+  ViewStory_async() async {
+    Uri url = Uri.parse(glb.API.ViewStory);
+
+    var res = await http.post(url, body: {
+      'story_id':
+          widget.users[_currentUserIndex].stories[_currentStoryIndex].storyId,
+      'user_id': glb.userDetails.id,
+    });
+    setState(() {
+      widget.users[_currentUserIndex].stories[_currentStoryIndex].viewed = '1';
+    });
   }
 
   @override
@@ -254,6 +268,7 @@ class _StoryViewState extends State<StoryView>
   }
 
   void _nextStory() {
+    ViewStory_async();
     StoryUser currentUser = widget.users[_currentUserIndex];
 
     if (_currentStoryIndex < currentUser.stories.length - 1) {
