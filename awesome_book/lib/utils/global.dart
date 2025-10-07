@@ -109,6 +109,7 @@ class API {
   static const String uploadComment = baseURL + "Upload_comments";
   static const String GetMsgLst = baseURL + "GetMsgLst";
   static const String getConvo = baseURL + "GetConvo";
+  static const String search = baseURL + "search";
 }
 
 errorSnackBar(BuildContext context, String message) {

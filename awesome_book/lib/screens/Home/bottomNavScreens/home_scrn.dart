@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:awesome_book/Cards/posts_card.dart';
 import 'package:awesome_book/Image/Camera_scrn.dart';
 import 'package:awesome_book/Route/router.dart';
+import 'package:awesome_book/ads/ad_post.dart';
+import 'package:awesome_book/ads/add_mob_native_add.dart';
+import 'package:awesome_book/ads/native_ad.dart';
 import 'package:awesome_book/models/posts_model.dart';
 import 'package:awesome_book/models/stories_model.dart';
 import 'package:awesome_book/try/camera.dart';
@@ -24,22 +27,28 @@ class _Home_scrnState extends State<Home_scrn> {
   List<Post_model> PM = [];
   List<StoryUser> SU = [];
   ScrollController _scrollController = ScrollController();
-  bool isLoading = false;
+  bool isLoadingPosts = false;
+  bool isLoadingStories = false;
   int page = 1;
   final int limit = 10;
 
   @override
   void initState() {
     super.initState();
+    _initializeData();
+    _setupScrollListener();
+  }
 
+  void _initializeData() {
     fetchPosts_async();
     fetchStories_async();
+  }
 
-    // Attach scroll listener for infinite scroll
+  void _setupScrollListener() {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
               _scrollController.position.maxScrollExtent - 200 &&
-          !isLoading) {
+          !isLoadingPosts) {
         fetchPosts_async();
       }
     });
@@ -48,23 +57,27 @@ class _Home_scrnState extends State<Home_scrn> {
   Future<void> _refresh() async {
     setState(() {
       PM.clear();
+      SU.clear(); // Clear stories as well
       page = 1;
     });
-    // fetchStories_async();
-    await fetchPosts_async();
-    fetchStories_async();
+
+    // Fetch both posts and stories concurrently
+    await Future.wait([
+      fetchPosts_async(),
+      fetchStories_async(),
+    ]);
   }
 
   Future<void> fetchPosts_async() async {
-    if (isLoading) return;
-    setState(() => isLoading = true);
+    if (isLoadingPosts) return;
+    setState(() => isLoadingPosts = true);
 
     Uri url = Uri.parse("${glb.API.GetPosts}?page=$page&limit=$limit");
-    // print("Fetching: $url");
 
     try {
       var res = await http.post(url, body: {'follower_id': '1'});
-      print("pot bdy = ${res.body}");
+      print("Posts response = ${res.body}");
+
       if (res.statusCode == 200) {
         List<dynamic> body = jsonDecode(res.body);
         List<Post_model> newPosts = body
@@ -83,7 +96,7 @@ class _Home_scrnState extends State<Home_scrn> {
                   is_liked: p['is_liked'].toString(),
                 ))
             .toList();
-        fetchStories_async();
+
         setState(() {
           PM.addAll(newPosts);
           page++;
@@ -93,33 +106,32 @@ class _Home_scrnState extends State<Home_scrn> {
       print("Error fetching posts: $e");
     }
 
-    setState(() => isLoading = false);
+    setState(() => isLoadingPosts = false);
   }
 
   Future<void> fetchStories_async() async {
-    debugPrint("Fetching stories...");
-    // List<StoryUser> story_users = [];
-    if (isLoading) return;
-    setState(() => isLoading = true);
+    if (isLoadingStories) return;
+    setState(() => isLoadingStories = true);
 
     Uri url = Uri.parse("${glb.API.GetStories}");
-    // print("Fetching: $url");
 
     try {
       var res = await http.post(url, body: {'user_id': glb.userDetails.id});
-      print("pot bdy = ${res.body}");
-      List l1 = jsonDecode(res.body);
+      print("Stories response = ${res.body}");
+
       if (res.statusCode == 200) {
-        for (var i = 0; i < l1.length; i++) {
-          var story = l1[i];
-          String user_id = story['user_id'].toString();
-          String username = story['username'].toString();
-          String userImage = story['userImage'].toString();
+        List<dynamic> responseData = jsonDecode(res.body);
+        List<StoryUser> newStories = [];
+
+        for (var storyUserData in responseData) {
+          String user_id = storyUserData['user_id'].toString();
+          String username = storyUserData['username'].toString();
+          String userImage = storyUserData['userImage'].toString();
 
           List<Story> stories = [];
-          List l2 = l1[i]['stories'];
-          for (var j = 0; j < l2.length; j++) {
-            var storyData = l2[j];
+          List storiesData = storyUserData['stories'] ?? [];
+
+          for (var storyData in storiesData) {
             stories.add(Story(
               imageUrl:
                   glb.API.baseURL + "public" + storyData['imageUrl'].toString(),
@@ -129,36 +141,63 @@ class _Home_scrnState extends State<Home_scrn> {
               viewed: storyData['viewed'].toString(),
             ));
           }
-          SU.add(StoryUser(
+
+          newStories.add(StoryUser(
             username: username,
             userImage: glb.API.baseURL + userImage,
             stories: stories,
             user_id: user_id,
           ));
         }
-        // stories.add(StoryUser(
 
-        //     username: username, userImage: userImage, stories: stories));
         setState(() {
-          // SU = story_users;
-          // page++;
+          SU = newStories; // Replace instead of adding
         });
       }
     } catch (e) {
-      print("Error fetching posts: $e");
+      print("Error fetching stories: $e");
     }
 
-    setState(() => isLoading = false);
+    setState(() => isLoadingStories = false);
+  }
+
+  int _getAdCount() {
+    return PM.isEmpty ? 0 : (PM.length / 5).floor();
+  }
+
+  int _getPostIndex(int listIndex) {
+    // Calculate actual post index accounting for ads
+    int adsBefore = (listIndex / 6).floor();
+    return listIndex - adsBefore;
+  }
+
+  bool _shouldShowNativeAd(int index) {
+    // Show native ad every 6 posts
+    return index > 0 && index % 6 == 0;
+  }
+
+  // Optional: Mix different ad types
+  Widget _buildRandomAd() {
+    final adTypes = ['native', 'banner'];
+    final randomType = adTypes[DateTime.now().millisecondsSinceEpoch % 2];
+
+    if (randomType == 'native') {
+      return NativeAdWidget();
+    } else {
+      return AdBannerWidget(); // Your existing banner ad
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    int totalItems = PM.length + _getAdCount();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xfff8faf8),
         title: ShaderMask(
           shaderCallback: (bounds) => LinearGradient(
-            colors: [Colors.blue, Colors.purple, Colors.red], // Gradient colors
+            colors: [Colors.blue, Colors.purple, Colors.red],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ).createShader(bounds),
@@ -206,10 +245,6 @@ class _Home_scrnState extends State<Home_scrn> {
               icon: Icon(Icons.send),
               onPressed: () {
                 Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
-                // print("Send button pressed");
-                // fetchStories_async();
-                // saveUser(glb.newUser(name: 'atq', age: 1));
-                // getMeMyUser();
               },
             ),
           ),
@@ -220,32 +255,55 @@ class _Home_scrnState extends State<Home_scrn> {
         child: ListView(
           controller: _scrollController,
           children: [
+            // Stories Section
             SizedBox(
               height: 15.h,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: SU.length,
-                itemBuilder: (context, index) {
-                  return StoriesCircle(
-                    name: 'Story $index',
-                    idx: index,
-                    storyUsers: SU,
-                  );
-                },
-              ),
+              child: SU.isEmpty && isLoadingStories
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: SU.length,
+                      itemBuilder: (context, index) {
+                        return StoriesCircle(
+                          name: 'Story $index',
+                          idx: index,
+                          storyUsers: SU,
+                        );
+                      },
+                    ),
             ),
             SizedBox(height: 1.h),
+
+            // Posts and Native Ads Section
             ListView.builder(
-              itemCount: PM.length + 1,
+              itemCount: totalItems + (isLoadingPosts ? 1 : 0),
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
-                if (index == PM.length) {
-                  return isLoading
-                      ? Center(child: CircularProgressIndicator())
+                // Show loading indicator at the end
+                if (index == totalItems) {
+                  return isLoadingPosts
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
                       : SizedBox();
                 }
-                return Posts_card(posts: PM[index]);
+
+                // Show native ad every 6 posts
+                if (_shouldShowNativeAd(index)) {
+                  return AdMobNativeAdWidget(); // Native ad that looks like a post
+                }
+
+                // Show post
+                int postIndex = _getPostIndex(index);
+                if (postIndex < PM.length) {
+                  return Posts_card(posts: PM[postIndex]);
+                }
+
+                return SizedBox();
               },
             ),
           ],

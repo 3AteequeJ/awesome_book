@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:awesome_book/ads/add_mob_native_add.dart';
 import 'package:awesome_book/models/comments_model.dart';
 import 'package:awesome_book/models/posts_model.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,6 +18,8 @@ class Reels_scrn extends StatefulWidget {
   State<Reels_scrn> createState() => _Reels_scrnState();
 }
 
+List<dynamic> reelsFeed = []; // will hold reels + ad markers
+
 class _Reels_scrnState extends State<Reels_scrn> {
   late PageController _pageController;
   Map<int, VideoPlayerController> _controllers = {};
@@ -32,6 +34,17 @@ class _Reels_scrnState extends State<Reels_scrn> {
   bool isLoading = false;
   double opacity = 0;
   bool hasMoreData = true;
+
+  void prepareReelsFeed() {
+    reelsFeed = [];
+    for (int i = 0; i < PM.length; i++) {
+      reelsFeed.add(PM[i]);
+      if ((i + 1) % 4 == 0) {
+        // 👈 insert ad after every 4 reels
+        reelsFeed.add("ad");
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -86,6 +99,7 @@ class _Reels_scrnState extends State<Reels_scrn> {
         setState(() {
           PM.addAll(newPosts);
           page++;
+          prepareReelsFeed(); // 👈 refresh mixed feed
         });
 
         // Initialize controllers for new videos
@@ -461,9 +475,17 @@ class _Reels_scrnState extends State<Reels_scrn> {
         controller: _pageController,
         scrollDirection: Axis.vertical,
         onPageChanged: _onPageChanged,
-        itemCount: PM.length,
+        itemCount: reelsFeed.length,
         itemBuilder: (context, index) {
-          final reel = PM[index];
+          final item = reelsFeed[index];
+
+          if (item == "ad") {
+            return const AdMobNativeAdWidget(); // 👈 show ad here
+          }
+
+          final reel = item as Post_model;
+          final reelIndex = PM.indexOf(reel); // keep index mapped
+
           final hasController = _controllers.containsKey(index);
           final controller = hasController ? _controllers[index] : null;
           final isInitialized = controller?.value.isInitialized ?? false;
