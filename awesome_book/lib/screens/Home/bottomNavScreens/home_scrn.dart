@@ -195,20 +195,24 @@ class _Home_scrnState extends State<Home_scrn> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xfff8faf8),
-        title: ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [Colors.blue, Colors.purple, Colors.red],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
-          child: Text(
-            "Awesomebook",
-            style: TextStyle(
-              fontSize: 18,
-              fontFamily: 'igronte',
-              color: Colors.white,
-            ),
-          ),
+        // title: ShaderMask(
+        //   shaderCallback: (bounds) => LinearGradient(
+        //     colors: [Colors.blue, Colors.purple, Colors.red],
+        //     begin: Alignment.topLeft,
+        //     end: Alignment.bottomRight,
+        //   ).createShader(bounds),
+        //   child: Text(
+        //     "Awesomebook",
+        //     style: TextStyle(
+        //       fontSize: 18,
+        //       fontFamily: 'igronte',
+        //       color: Colors.white,
+        //     ),
+        //   ),
+        // ),
+        title: Image.asset(
+          'assets/images/icon.jpeg', // path to your app icon
+          height: 32, // adjust to fit your AppBar height
         ),
         centerTitle: true,
         elevation: 1.0,
