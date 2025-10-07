@@ -7,7 +7,11 @@ import 'package:awesome_book/widgets/mytext.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
-  const UserProfileScreen({super.key, required this.userId});
+  // final Map userData;
+  const UserProfileScreen({
+    super.key,
+    required this.userId,
+  });
 
   @override
   State<UserProfileScreen> createState() => _UserProfileScreenState();
@@ -114,23 +118,67 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             const SizedBox(height: 10),
 
             // ✅ Follow Button
+            // ✅ Follow / Unfollow Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ElevatedButton(
-                onPressed: () {
-                  // Add follow/unfollow logic here later
+                onPressed: () async {
+                  try {
+                    // follower_id = logged-in user
+                    // following_id = profile user
+                    final followerId =
+                        glb.userDetails.id; // current logged-in user
+                    final followingId = widget.userId; // visiting profile user
+
+                    final apiUrl = Uri.parse(
+                        "https://awesomebook.in/awesomebookbackend/unfollow");
+
+                    final res = await http.post(apiUrl, body: {
+                      "follower_id": followerId,
+                      "following_id": followingId,
+                    });
+
+                    print("📩 Follow/Unfollow API Status: ${res.statusCode}");
+                    print("Response Body: ${res.body}");
+
+                    if (res.statusCode == 200) {
+                      setState(() {
+                        // toggle state based on API response
+                        if (userData!['is_following'] == '1') {
+                          userData!['is_following'] = '0';
+                        } else {
+                          userData!['is_following'] = '1';
+                        }
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text("Failed to update follow status")),
+                      );
+                    }
+                  } catch (e) {
+                    print("❌ Follow/Unfollow Error: $e");
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Error updating follow status")),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 45),
-                  backgroundColor: Colors.blue,
+                  backgroundColor: userData!['is_following'] == '1'
+                      ? Colors.grey
+                      : Colors.blue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text(
-                  "Follow",
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                child: Text(
+                  userData!['is_following'] == '1' ? "Following" : "Follow",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

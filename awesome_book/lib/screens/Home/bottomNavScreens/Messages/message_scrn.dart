@@ -22,6 +22,19 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen> {
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  int currentPage = 1;
+  bool isLoadingMore = false;
+  bool hasMoreMessages = true;
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
   // final List<Message> _messages = [
   //   Message(
   //     sender: 'John',
@@ -55,59 +68,107 @@ class _MessageScreenState extends State<MessageScreen> {
   //   ),
   // ];
 
-  void _handleSubmitted(String text) {
+  void _handleSubmitted(String text) async {
+    if (text.trim().isEmpty) return;
+
     _textController.clear();
+
+    // Create a new message locally at the end
+    final newMessage = Message_Model(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      sender_id: glb.userDetails.id,
+      receiver_id: widget.userDetails.id,
+      message: text.trim(),
+      timestamp: DateTime.now().toString(),
+    );
+
     setState(() {
-      // _messages.add(
-      //   Message(
-      //     sender: 'Me',
-      //     text: text,
-      //     time: DateTime.now(),
-      //     isMe: true,
-      //   ),
-      // );
+      messages.add(newMessage);
     });
-    // Simulate a response after 1 second
-    // Future.delayed(const Duration(seconds: 1), () {
-    //   if (mounted) {
-    //     setState(() {
-    //       _messages.add(
-    //         Message(
-    //           sender: 'John',
-    //           text: 'That sounds interesting!',
-    //           time: DateTime.now(),
-    //           isMe: false,
-    //         ),
-    //       );
-    //     });
-    //   }
-    // });
+
+    // Auto-scroll to bottom
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
+    try {
+      Uri url = Uri.parse("https://awesomebook.in/awesomebookbackend/SendMsg");
+      var res = await http.post(url, body: {
+        "sender_id": glb.userDetails.id,
+        "receiver_id": widget.userDetails.id,
+        "message": text.trim(),
+      });
+
+      print("📩 Send Message API Status: ${res.statusCode}");
+      print("Response Body: ${res.body}");
+
+      if (res.statusCode == 200) {
+        getConvo_async();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to send message")),
+        );
+      }
+    } catch (e) {
+      print("❌ Error sending message: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error sending message")),
+      );
+    }
   }
 
   List<Message_Model> messages = [];
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getConvo_async();
+
+    _scrollController.addListener(() {
+      // when user reaches the TOP
+      if (_scrollController.position.pixels <= 50 &&
+          !isLoadingMore &&
+          hasMoreMessages) {
+        loadOlderMessages();
+      }
+    });
   }
 
   getConvo_async() async {
     messages.clear();
+    currentPage = 1;
+    hasMoreMessages = true;
     Uri url = Uri.parse(glb.API.getConvo);
+
+    print("get convo == $url");
 
     try {
       var res = await http.post(url, body: {
         'sender_id': glb.userDetails.id,
         'receiver_id': widget.userDetails.id,
+        'page': currentPage.toString(),
       });
 
-      print(res.body);
-      List b = jsonDecode(res.body);
+      print("body ==> ${res.body}");
+      print(
+          "📡 Sending to getConvo: page=$currentPage, sender=${glb.userDetails.id}, receiver=${widget.userDetails.id}");
+      print("📩 API Response (${res.statusCode}): ${res.body}");
       var bdy = jsonDecode(res.body);
 
+      if (bdy.isEmpty) {
+        hasMoreMessages = false;
+        return;
+      }
+
+      // oldest → top, newest → bottom
+      bdy = bdy.reversed.toList();
+
       for (var message in bdy) {
-        print("this is message: ${message}");
         messages.add(Message_Model(
           id: message['id'].toString(),
           sender_id: message['sender_id'].toString(),
@@ -118,7 +179,79 @@ class _MessageScreenState extends State<MessageScreen> {
       }
 
       setState(() {});
-    } catch (e) {}
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      });
+    } catch (e) {
+      print("❌ Error fetching conversation: $e");
+    }
+  }
+
+  Future<void> loadOlderMessages() async {
+    if (isLoadingMore || !hasMoreMessages) return;
+    isLoadingMore = true;
+    currentPage++;
+
+    print("⬆️ Loading older messages (page $currentPage)");
+
+    try {
+      Uri url = Uri.parse(glb.API.getConvo);
+      var res = await http.post(url, body: {
+        'sender_id': glb.userDetails.id,
+        'receiver_id': widget.userDetails.id,
+        'page': currentPage.toString(),
+      });
+
+      if (res.statusCode == 200 && res.body.isNotEmpty) {
+        var bdy = jsonDecode(res.body);
+
+        if (bdy.isEmpty) {
+          print("⛔ No more messages");
+          hasMoreMessages = false;
+          isLoadingMore = false;
+          return;
+        }
+
+        // ✅ Ensure order oldest → newest
+        bdy = bdy.reversed.toList();
+
+        // ✅ Convert raw data into a list of Message_Model
+        List<Message_Model> olderMessages = bdy.map<Message_Model>((msg) {
+          return Message_Model(
+            id: msg['id'].toString(),
+            sender_id: msg['sender_id'].toString(),
+            receiver_id: msg['receiver_id'].toString(),
+            message: msg['message'].toString(),
+            timestamp: msg['time_stamp'].toString(),
+          );
+        }).toList();
+
+        // ✅ Insert them at the top
+        double beforeOffset = _scrollController.offset;
+        double beforeMaxExtent = _scrollController.position.maxScrollExtent;
+
+        setState(() {
+          messages.insertAll(0, olderMessages);
+        });
+
+        // ✅ Keep scroll stable
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            double newMaxExtent = _scrollController.position.maxScrollExtent;
+            double offsetDiff = newMaxExtent - beforeMaxExtent;
+            _scrollController.jumpTo(beforeOffset + offsetDiff);
+          }
+        });
+      } else {
+        print("❌ Failed loading older messages: ${res.statusCode}");
+      }
+    } catch (e) {
+      print("❌ Error loading older messages: $e");
+    }
+
+    isLoadingMore = false;
   }
 
   @override
@@ -143,8 +276,9 @@ class _MessageScreenState extends State<MessageScreen> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(8.0),
-              reverse: false,
+              reverse: false, // keep normal order (top -> old, bottom -> new)
               itemCount: messages.length,
               itemBuilder: (_, int index) => _buildMessageItem(messages[index]),
             ),
@@ -236,6 +370,7 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _textController.dispose();
     super.dispose();
   }
