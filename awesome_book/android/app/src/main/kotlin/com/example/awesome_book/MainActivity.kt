@@ -8,11 +8,20 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // ✅ Register the Native Ad Factory
-        GoogleMobileAdsPlugin.registerNativeAdFactory(
-            flutterEngine,
-            "listTile", // MUST match Dart factoryId
-            ListTileNativeAdFactory(context)
-        )
+        try {
+            // ✅ Safely add plugin if missing
+            flutterEngine.plugins.add(GoogleMobileAdsPlugin())
+
+            // ✅ Register Native Ad Factory safely
+            GoogleMobileAdsPlugin.registerNativeAdFactory(
+                flutterEngine,
+                "listTile", // must match Dart's factoryId
+                ListTileNativeAdFactory(context)
+            )
+
+            println("✅ Native Ad Factory registered successfully!")
+        } catch (e: Exception) {
+            println("⚠️ Failed to register Native Ad Factory: ${e.message}")
+        }
     }
 }

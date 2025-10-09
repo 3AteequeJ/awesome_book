@@ -40,11 +40,13 @@ class RouteGenerator {
           type: '1',
         ));
       case rt_following:
-        return myRoute(Following_scrn(
-          type: '2',
-        ));
+        return myRoute(const Following_scrn());
+      // case rt_editprofile:
+      //   return myRoute(EditProfileScreen());
       case rt_editprofile:
-        return myRoute(EditProfile_scrn());
+        // return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+        return MaterialPageRoute(builder: (_) => const EditProfile_scrn());
+
       case rt_msgLst:
         return myRoute(Messagelist_Scrn(
           type: '0',

@@ -5,7 +5,12 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 
 class People_card extends StatefulWidget {
   final String type; //? 0-message / 1-followers / 2-following
-  const People_card({super.key, required this.type});
+  const People_card(
+      {super.key,
+      required this.type,
+      required userName,
+      required profileImg,
+      required name});
 
   @override
   State<People_card> createState() => _People_cardState();

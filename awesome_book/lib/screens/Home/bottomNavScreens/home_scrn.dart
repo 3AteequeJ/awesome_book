@@ -211,8 +211,8 @@ class _Home_scrnState extends State<Home_scrn> {
         //   ),
         // ),
         title: Image.asset(
-          'assets/images/icon.jpeg', // path to your app icon
-          height: 32, // adjust to fit your AppBar height
+          'assets/images/icon.jpeg',
+          height: 32,
         ),
         centerTitle: true,
         elevation: 1.0,

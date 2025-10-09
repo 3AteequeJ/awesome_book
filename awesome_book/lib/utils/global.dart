@@ -2,6 +2,7 @@ import 'package:awesome_book/widgets/mytext.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:flutter/material.dart';
 
 class userDetails {
   static String id = "";
@@ -76,20 +77,20 @@ class newUser {
   // Convert JSON to object
   factory newUser.fromJson(Map<String, dynamic> json) {
     return newUser(
-      id: json['id'],
-      name: json['name'],
-      user_name: json['user_name'],
-      email_id: json['email_id'],
-      profile_img: json['profile_img'],
-      pswd: json['pswd'],
-      verified: json['verified'],
-      status: json['status'],
-      open: json['open'],
-      dateTime: json['dateTime'],
-      no_posts: json['no_posts'],
-      no_follower: json['no_follower'],
-      no_following: json['no_following'],
-      bio: json['bio'],
+      id: json['id']?.toString() ?? "",
+      name: json['name']?.toString() ?? "",
+      user_name: json['user_name']?.toString() ?? "", // ✅ fixed
+      email_id: json['email_id']?.toString() ?? "",
+      profile_img: json['profile_img']?.toString() ?? "",
+      pswd: json['pswd']?.toString() ?? "",
+      verified: json['verified']?.toString() ?? "",
+      status: json['status']?.toString() ?? "",
+      open: json['open']?.toString() ?? "",
+      dateTime: json['dateTime']?.toString() ?? "",
+      no_posts: json['no_posts']?.toString() ?? "",
+      no_follower: json['no_follower']?.toString() ?? "",
+      no_following: json['no_following']?.toString() ?? "",
+      bio: json['bio']?.toString() ?? "",
     );
   }
 }
@@ -283,4 +284,25 @@ Future<void> showLoadingDialog(
   if (context.mounted) {
     Navigator.pop(context); // Close the dialog
   }
+}
+// ======== Toast & Loading Utilities ========
+
+void successToast(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message, style: const TextStyle(color: Colors.white)),
+      backgroundColor: Colors.green,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+}
+
+void infoToast(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message, style: const TextStyle(color: Colors.white)),
+      backgroundColor: Colors.blueAccent,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
 }

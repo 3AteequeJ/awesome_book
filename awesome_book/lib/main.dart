@@ -70,8 +70,13 @@
 //     );
 //   }
 // }
+
+import 'dart:async';
+
 import 'package:awesome_book/Route/router.dart';
+import 'package:awesome_book/core/errrors/error_reporter.dart';
 import 'package:awesome_book/utils/colours.dart';
+import 'package:awesome_book/utils/sharedPrefs.dart';
 import 'package:camera/camera.dart';
 import 'package:email_otp/email_otp.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +87,7 @@ late List<CameraDescription> _cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadUserFromPrefs();
 
   // ✅ Initialize AdMob SDK
   await MobileAds.instance.initialize();
@@ -105,7 +111,15 @@ Future<void> main() async {
     otpLength: 6,
   );
 
-  runApp(const MyApp());
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    ErrorReporter.report(details.exception, details.stack);
+  };
+
+  runZonedGuarded(
+    () => runApp(const MyApp()),
+    (error, stackTrace) => ErrorReporter.report(error, stackTrace),
+  );
 }
 
 class MyApp extends StatelessWidget {

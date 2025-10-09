@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:awesome_book/screens/Home/BottomNav_scrn.dart';
 import 'package:awesome_book/utils/global.dart' as glb;
 import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/screens/preScreens/signUp_scrn.dart';
@@ -127,9 +128,9 @@ class _Login_scrnState extends State<Login_scrn> {
                                 color: Color(0xff667BF2),
                               ),
                             ),
-                            hintText: 'Mobile number',
+                            hintText: 'Email',
                             // prefixIcon: Icon(Icons.call),
-                            prefixIcon: Icon(CupertinoIcons.person),
+                            prefixIcon: Icon(CupertinoIcons.mail),
                             prefixStyle: TextStyle(color: Colors.black),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15.sp),
@@ -222,7 +223,7 @@ class _Login_scrnState extends State<Login_scrn> {
               ),
               Expanded(child: Container()),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(16.0),
                 child: MyButton(
                     foregroundColor: Colors.black,
                     required_widget: const Txt(
@@ -311,6 +312,8 @@ class _Login_scrnState extends State<Login_scrn> {
 
           // glb.userDetails.refer_id = bdy[0]['refer_id'].toString();
         });
+        print("🧩 API keys: ${bdy[0].keys}");
+
         print('here');
         await saveUser(glb.newUser(
             id: bdy[0]['id'].toString(),
@@ -350,17 +353,22 @@ class _Login_scrnState extends State<Login_scrn> {
             'sp_no_follower', '${glb.userDetails.no_follower}');
         await prefs.setString(
             'sp_no_following', '${glb.userDetails.no_following}');
-        // Navigator.push(
-        //   context,
-        //   CupertinoPageRoute(
-        //     builder: (context) => const BottomNavBar_scrn(),
-        //   ),
-        // );
+        print("🔑 Logged in user_id: ${glb.userDetails.id}");
+        print("🧠 USER SAVED:");
+        print("ID: ${glb.userDetails.id}");
+        print("USERNAME: ${glb.userDetails.user_name}");
+        print("NAME: ${glb.userDetails.name}");
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (context) => const BottomNav_scrn()),
+        );
+
         // Navigator.pushNamed(context, RouteGenerator.rt_home);
+        //  Navigator.pushReplacementNamed(
+        // context,
+        // RouteGenerator.BottomNav_scrn, // make sure this matches your route name
       } else {
-        print("Wrong pswd");
         glb.errorToast(context, "Wrong pswd");
-        // glb.error_Snackbar(context, "Wrong password");
       }
     } catch (e) {
       print("Login exception ==> ${e}");

@@ -24,9 +24,13 @@ class _Splash_scrnState extends State<Splash_scrn> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Txt(
-          text: "This is a splash screen",
+        child: Image.asset(
+          'assets/images/icon.jpeg',
+          // height: 32,
         ),
+        // child: Txt(
+        //   text: "This is a splash screen",
+        // ),
       ),
     );
   }
