@@ -14,6 +14,8 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   Map<String, dynamic>? userData;
+  static final Map<String, bool> _localFollowCache = {};
+
   bool isLoading = true;
   bool isProcessing = false;
   bool isFollowing = false;
@@ -48,10 +50,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               "no_posts": (data["total_posts"] ?? 0).toString(),
               "no_follower": (data["total_followers"] ?? 0).toString(),
               "no_following": (data["total_following"] ?? 0).toString(),
-              // If backend later returns this, we’ll respect it; else default 0
               "is_following": (data["is_following"] ?? "0").toString(),
             };
-            isFollowing = userData!["is_following"] == "1";
+
+            // ✅ Use local cache if backend doesn’t show updated value
+            final uid = widget.userId;
+
+// ✅ Check local cache first
+            if (glb.followCache.containsKey(uid)) {
+              isFollowing = glb.followCache[uid]!;
+              userData!['is_following'] = isFollowing ? '1' : '0';
+            } else {
+              isFollowing = userData!['is_following'] == '1';
+            }
           });
 
           if (isFollowing) {
@@ -92,8 +103,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     setState(() => isProcessing = true);
 
     try {
-      final followerId = glb.userDetails.id; // logged-in user
-      final followingId = widget.userId; // visited user
+      final followerId = glb.userDetails.id;
+      final followingId = widget.userId;
 
       final url =
           Uri.parse("https://awesomebook.in/awesomebookbackend/unfollow");
@@ -104,29 +115,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
       if (res.statusCode == 200) {
         final wasFollowing = isFollowing;
+        final body = res.body.toLowerCase();
+
+        // 🔹 Toggle locally
         setState(() {
-          isFollowing = !isFollowing;
+          isFollowing = !wasFollowing;
           userData!['is_following'] = isFollowing ? '1' : '0';
 
+          // 🔹 Adjust follower count locally
           final currentFollowers =
               int.tryParse(userData!['no_follower'] ?? '0') ?? 0;
           userData!['no_follower'] =
               (isFollowing ? currentFollowers + 1 : currentFollowers - 1)
-                  .clamp(0, 1 << 31)
+                  .clamp(0, 999999)
                   .toString();
         });
 
-        if (!wasFollowing && isFollowing) {
-          // Just followed -> load real posts
+        // 🔹 Only fetch posts if following now
+        if (isFollowing) {
           await fetchUserPosts();
           glb.successToast(context, "Followed successfully ✅");
-        } else if (wasFollowing && !isFollowing) {
-          // Just unfollowed -> hide posts
+        } else {
           setState(() => userPosts.clear());
           glb.infoToast(context, "Unfollowed successfully ❌");
-        } else {
-          glb.infoToast(context, "Updated.");
         }
+
+        // 🔹 Update global so your profile count updates
+        glb.shouldRefreshProfile = true;
+        glb.followCache[widget.userId] = isFollowing;
       } else {
         glb.errorToast(context, "Server error (${res.statusCode})");
       }

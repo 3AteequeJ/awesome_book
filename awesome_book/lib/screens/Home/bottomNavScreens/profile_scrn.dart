@@ -313,18 +313,20 @@
 // }
 import 'dart:convert';
 import 'package:awesome_book/Route/router.dart';
+import 'package:awesome_book/screens/Home/bottomNavScreens/follow_req.dart';
 import 'package:awesome_book/screens/Home/bottomNavScreens/profile%20screens/post_preview_page.dart';
 import 'package:awesome_book/widgets/mytext.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:awesome_book/utils/global.dart' as glb;
+import 'package:flutter/scheduler.dart';
 
 class Profile_scrn extends StatefulWidget {
   @override
   State<Profile_scrn> createState() => _Profile_scrnState();
 }
 
-class _Profile_scrnState extends State<Profile_scrn> {
+class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
   bool isLoading = true;
   bool isVerifying = false;
   List<dynamic> userPosts = [];
@@ -333,42 +335,83 @@ class _Profile_scrnState extends State<Profile_scrn> {
   void initState() {
     super.initState();
     fetchProfileAndPosts();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted && glb.shouldRefreshProfile) {
+          fetchProfileAndPosts();
+          glb.shouldRefreshProfile = false;
+        }
+      });
+    });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      glb.routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    glb.routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    if (glb.shouldRefreshProfile) {
+      fetchProfileAndPosts();
+      glb.shouldRefreshProfile = false;
+    }
+  }
+
+  // ✅ Fetch profile info & posts
   Future<void> fetchProfileAndPosts() async {
     final userId = glb.userDetails.id;
-    if (userId.isEmpty) {
-      print("⚠️ No user_id found");
-      return;
-    }
+    if (userId.isEmpty) return;
 
     setState(() => isLoading = true);
 
     try {
-      // ✅ Step 1: Fetch profile info
       final profileRes = await http.post(
-        Uri.parse("https://awesomebook.in/awesomebookbackend/userData"),
+        Uri.parse("https://awesomebook.in/awesomebookbackend/GetMyDets"),
         body: {"user_id": userId},
       );
 
+      print("📤 Fetching GetMyDets for user_id=${glb.userDetails.id}");
+      print("📨 Raw GetMyDets response: ${profileRes.body}");
+
+      print(
+          "🔹 Profile counts updated => Followers: ${glb.userDetails.no_follower}, Following: ${glb.userDetails.no_following}");
+
       if (profileRes.statusCode == 200 && profileRes.body.isNotEmpty) {
-        final data = jsonDecode(profileRes.body);
-        if (data is Map) {
-          glb.userDetails.name = data["name"] ?? glb.userDetails.name;
-          glb.userDetails.user_name =
-              data["user_name"] ?? glb.userDetails.user_name;
-          glb.userDetails.bio = data["bio"] ?? glb.userDetails.bio;
-          glb.userDetails.no_posts = data["total_posts"]?.toString() ?? "0";
-          glb.userDetails.no_follower =
-              data["total_followers"]?.toString() ?? "0";
-          glb.userDetails.no_following =
-              data["total_following"]?.toString() ?? "0";
-          glb.userDetails.verified =
-              data["verified"]?.toString() ?? glb.userDetails.verified;
+        final decoded = jsonDecode(profileRes.body);
+
+        if (decoded is List && decoded.isNotEmpty) {
+          final data = decoded.first;
+
+          setState(() {
+            glb.userDetails.name = data["name"] ?? glb.userDetails.name;
+            glb.userDetails.user_name =
+                data["user_name"] ?? glb.userDetails.user_name;
+            glb.userDetails.bio = data["bio"] ?? glb.userDetails.bio;
+            glb.userDetails.no_posts = data["total_posts"]?.toString() ?? "0";
+            glb.userDetails.no_follower =
+                data["total_followers"]?.toString() ?? "0";
+            glb.userDetails.no_following =
+                data["total_following"]?.toString() ?? "0";
+            glb.userDetails.verified =
+                data["verified"]?.toString() ?? glb.userDetails.verified;
+            glb.userDetails.profile_img = data["profile_image"]?.toString() ??
+                glb.userDetails.profile_img;
+          });
         }
       }
 
-      // ✅ Step 2: Fetch user's posts
       final postsRes = await http.post(
         Uri.parse("https://awesomebook.in/awesomebookbackend/GetMyPosts"),
         body: {"user_id": userId},
@@ -389,7 +432,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
     }
   }
 
-  // ✅ Normalize backend image paths
   String _fixImageUrl(String? raw) {
     if (raw == null || raw.isEmpty) return "";
     if (raw.startsWith("http")) return raw;
@@ -402,7 +444,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
     }
   }
 
-  // ✅ Handle Verification Request
   Future<void> _handleVerificationRequest() async {
     final userId = glb.userDetails.id;
     if (userId.isEmpty) {
@@ -481,13 +522,28 @@ class _Profile_scrnState extends State<Profile_scrn> {
             ],
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_1_outlined,
+                color: Colors.black),
+            onPressed: () async {
+              // 👇 open follow requests and refresh if changed
+              final changed = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FollowRequestsScreen()),
+              );
+              if (changed == true && mounted) {
+                await fetchProfileAndPosts();
+              }
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.black))
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  // ✅ Fixed Profile Header
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16.0, vertical: 12.0),
@@ -510,23 +566,24 @@ class _Profile_scrnState extends State<Profile_scrn> {
                             children: [
                               _statItem(glb.userDetails.no_posts, "Posts"),
                               InkWell(
-                                onTap: () => Navigator.pushNamed(
-                                    context, RouteGenerator.rt_followers),
-                                borderRadius: BorderRadius.circular(8),
-                                splashColor: Colors.black12,
+                                onTap: () async {
+                                  final changed = await Navigator.pushNamed(
+                                      context, RouteGenerator.rt_followers);
+                                  if (changed == true && mounted) {
+                                    await fetchProfileAndPosts();
+                                  }
+                                },
                                 child: _statItem(
                                     glb.userDetails.no_follower, "Followers"),
                               ),
                               InkWell(
                                 onTap: () async {
-                                  final updated = await Navigator.pushNamed(
+                                  final changed = await Navigator.pushNamed(
                                       context, RouteGenerator.rt_following);
-                                  if (updated == true) {
-                                    fetchProfileAndPosts(); // refresh counts
+                                  if (changed == true && mounted) {
+                                    await fetchProfileAndPosts();
                                   }
                                 },
-                                borderRadius: BorderRadius.circular(8),
-                                splashColor: Colors.black12,
                                 child: _statItem(
                                     glb.userDetails.no_following, "Following"),
                               ),
@@ -536,8 +593,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
                       ],
                     ),
                   ),
-
-                  // 🧾 Bio Section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text(glb.userDetails.bio,
@@ -545,8 +600,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
                             color: Colors.black87, fontSize: 14)),
                   ),
                   const SizedBox(height: 12),
-
-                  // ✏️ Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -556,8 +609,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
                     ],
                   ),
                   const SizedBox(height: 15),
-
-                  // 🪪 Verification button
                   if (glb.userDetails.verified != "1")
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -579,7 +630,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 20),
                   const Text(
                     "Posts",
@@ -590,7 +640,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   _buildPostsGrid(),
                 ],
               ),
@@ -663,7 +712,6 @@ class _Profile_scrnState extends State<Profile_scrn> {
                 builder: (context) => PostPreviewPage(post: post),
               ),
             );
-
             if (deleted == true) {
               setState(() {
                 userPosts.removeAt(index);

@@ -4,6 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:flutter/material.dart';
 
+bool shouldRefreshProfile = false;
+// ✅ Store follow/unfollow state temporarily in memory
+Map<String, bool> followCache = {};
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 class userDetails {
   static String id = "";
   static String name = "";
@@ -111,6 +116,7 @@ class API {
   static const String GetMsgLst = baseURL + "GetMsgLst";
   static const String getConvo = baseURL + "GetConvo";
   static const String search = baseURL + "search";
+  static const String GetMyDets = baseURL + "GetMyDets";
 }
 
 errorSnackBar(BuildContext context, String message) {

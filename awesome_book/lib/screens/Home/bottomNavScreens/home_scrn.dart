@@ -194,22 +194,7 @@ class _Home_scrnState extends State<Home_scrn> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xfff8faf8),
-        // title: ShaderMask(
-        //   shaderCallback: (bounds) => LinearGradient(
-        //     colors: [Colors.blue, Colors.purple, Colors.red],
-        //     begin: Alignment.topLeft,
-        //     end: Alignment.bottomRight,
-        //   ).createShader(bounds),
-        //   child: Text(
-        //     "Awesomebook",
-        //     style: TextStyle(
-        //       fontSize: 18,
-        //       fontFamily: 'igronte',
-        //       color: Colors.white,
-        //     ),
-        //   ),
-        // ),
+        backgroundColor: const Color(0xfff8faf8),
         title: Image.asset(
           'assets/images/icon.jpeg',
           height: 32,
@@ -217,7 +202,7 @@ class _Home_scrnState extends State<Home_scrn> {
         centerTitle: true,
         elevation: 1.0,
         leading: IconButton(
-          icon: Icon(Icons.camera_alt),
+          icon: const Icon(Icons.camera_alt, color: Colors.black),
           onPressed: () {
             Navigator.of(context).push(
               PageRouteBuilder(
@@ -243,15 +228,23 @@ class _Home_scrnState extends State<Home_scrn> {
           },
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: IconButton(
-              icon: Icon(Icons.send),
-              onPressed: () {
-                Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
-              },
-            ),
+          // ✉️ Messages
+          IconButton(
+            icon: const Icon(Icons.send, color: Colors.black),
+            onPressed: () {
+              Navigator.pushNamed(context, RouteGenerator.rt_msgLst);
+            },
           ),
+          // 👥 Follow Requests
+          IconButton(
+              icon: const Icon(Icons.person_add_alt_1_outlined,
+                  color: Colors.black),
+              onPressed: () async {
+                await Navigator.pushNamed(
+                    context, RouteGenerator.rt_followRequests);
+                if (glb.shouldRefreshProfile) setState(() {});
+              }),
+          const SizedBox(width: 8),
         ],
       ),
       body: RefreshIndicator(

@@ -76,6 +76,7 @@ import 'dart:async';
 import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/core/errrors/error_reporter.dart';
 import 'package:awesome_book/utils/colours.dart';
+import 'package:awesome_book/utils/global.dart' as glb;
 import 'package:awesome_book/utils/sharedPrefs.dart';
 import 'package:camera/camera.dart';
 import 'package:email_otp/email_otp.dart';
@@ -132,6 +133,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Flutter Demo',
           debugShowCheckedModeBanner: false,
+          navigatorObservers: [glb.routeObserver],
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.black,

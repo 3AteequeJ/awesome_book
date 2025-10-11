@@ -1,4 +1,5 @@
 import 'package:awesome_book/screens/Home/BottomNav_scrn.dart';
+import 'package:awesome_book/screens/Home/bottomNavScreens/follow_req.dart';
 import 'package:awesome_book/screens/Home/bottomNavScreens/messageList_scrn.dart';
 import 'package:awesome_book/screens/Home/bottomNavScreens/profile%20screens/editProfile_scrn.dart';
 import 'package:awesome_book/screens/Home/bottomNavScreens/profile%20screens/following_scrn.dart';
@@ -23,6 +24,7 @@ class RouteGenerator {
   static const String rt_msgLst = "rt_msgLst";
   static const String rt_uploadPost = "rt_uploadPost";
   static const String rt_postFullScrn = "rt_postFullScrn";
+  static const String rt_followRequests = '/followRequests';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     final args = settings.arguments;
@@ -51,6 +53,8 @@ class RouteGenerator {
         return myRoute(Messagelist_Scrn(
           type: '0',
         ));
+      case RouteGenerator.rt_followRequests:
+        return MaterialPageRoute(builder: (_) => const FollowRequestsScreen());
       case rt_uploadPost:
         return myRoute(UploadPost_scrn());
       // case rt_postFullScrn:
