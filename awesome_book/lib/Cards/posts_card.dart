@@ -394,30 +394,31 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
     try {
       var res = await http.post(url, body: {'post_id': widget.post.id});
-      print("body hai");
-      print(res.statusCode);
+      print("📩 Comments API response: ${res.statusCode}");
       print(res.body);
-      var body = jsonDecode(res.body);
-      List b = jsonDecode(res.body);
 
-      for (var i = 0; i < b.length; i++) {
-        comments.add(CommentsModel(
-          id: body[i]['id'].toString(),
-          user_id: body[i]['user_id'].toString(),
-          post_id: body[i]['post_id'].toString(),
-          date_time: body[i]['date/time'].toString(),
-          comment: body[i]['comments'].toString(),
-          user_name: body[i]['user_name'].toString(),
-          user_img: body[i]['profile_image'].toString(),
-        ));
+      if (res.statusCode == 200 && res.body.isNotEmpty) {
+        List<dynamic> data = jsonDecode(res.body);
+
+        for (var i = 0; i < data.length; i++) {
+          comments.add(CommentsModel(
+            id: data[i]['id'].toString(),
+            user_id: data[i]['user_id'].toString(),
+            post_id: data[i]['post_id'].toString(),
+            date_time: data[i]['date/time']?.toString() ?? "",
+            comment: data[i]['comments']?.toString() ?? "",
+            user_name: data[i]['user_name']?.toString() ?? "",
+            user_img: data[i]['profile_image']?.toString() ?? "",
+          ));
+        }
+
         setState(() {
-          widget.post.no_comments = b.length.toString();
+          widget.post.no_comments = data.length.toString();
         });
-        // setState(() {
-        //   _showComments = !_showComments;
-        // });
       }
-    } catch (e) {}
+    } catch (e) {
+      print("❌ Error loading comments: $e");
+    }
 
     setState(() {});
   }
@@ -590,38 +591,100 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     );
   }
 
+//   uploadComment() async {
+//     Uri url = Uri.parse(glb.API.uploadComment);
+
+//     var newComment = CommentsModel(
+//       id: DateTime.now().millisecondsSinceEpoch.toString(),
+//       user_id: glb.userDetails.id,
+//       post_id: widget.post.id,
+//       date_time: DateTime.now().toString(),
+//       comment: _commentController.text.trim(),
+//       user_name: glb.userDetails.name,
+//       user_img: glb.userDetails.profile_img,
+//     );
+
+//     // ✅ Add comment instantly to UI
+//     setState(() {
+//       comments.insert(0, newComment);
+//       widget.post.no_comments =
+//           (int.parse(widget.post.no_comments) + 1).toString(); // ✅ Increment
+//     });
+
+//     _commentController.clear();
+
+//     try {
+//       var res = await http.post(url, body: {
+//         'post_id': widget.post.id,
+//         'user_id': glb.userDetails.id,
+//         'comments': newComment.comment,
+//       });
+
+//       print("📩 Comment upload response: ${res.body}");
+
+//       // ✅ If comment successfully saved in backend
+//       if (res.statusCode == 200 && res.body == '1') {
+//         // Close modal and tell parent to refresh
+//         Navigator.of(context).pop(true);
+//       } else {
+//         // ❌ If failed, revert the added comment
+//         setState(() {
+//           comments.removeAt(0);
+//           widget.post.no_comments =
+//               (int.parse(widget.post.no_comments) - 1).toString();
+//         });
+//       }
+//     } catch (e) {
+//       print("❌ Comment error: $e");
+//     }
+//   }
+// }
+
   uploadComment() async {
     Uri url = Uri.parse(glb.API.uploadComment);
 
     var newComment = CommentsModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       user_id: glb.userDetails.id,
       post_id: widget.post.id,
-      date_time: DateTime.now().toString(), // Temporary timestamp
+      date_time: DateTime.now().toString(),
       comment: _commentController.text.trim(),
-      user_name: glb.userDetails.name, // Get from user details
-      user_img: glb.userDetails.profile_img, // Get from user details
+      user_name: glb.userDetails.name,
+      user_img: glb.userDetails.profile_img,
     );
 
+    // ✅ Add comment instantly to UI
     setState(() {
-      comments.insert(0, newComment); // Add the new comment at the top
+      comments.insert(0, newComment);
+      widget.post.no_comments =
+          (int.parse(widget.post.no_comments) + 1).toString(); // ✅ Increment
     });
 
-    _commentController.clear(); // Clear text field
+    _commentController.clear();
 
-    var res = await http.post(url, body: {
-      'post_id': widget.post.id,
-      'user_id': glb.userDetails.id,
-      'comments': newComment.comment,
-    });
-
-    print(res.body);
-
-    if (res.body != '1') {
-      // If API call fails, remove the temporary comment
-      setState(() {
-        comments.add(newComment);
+    try {
+      var res = await http.post(url, body: {
+        'post_id': widget.post.id,
+        'user_id': glb.userDetails.id,
+        'comments': newComment.comment,
       });
+
+      print("📩 Comment upload response: ${res.body}");
+
+      // ✅ If comment successfully saved in backend
+      if (res.statusCode == 200 && res.body == '1') {
+        // Close modal and tell parent to refresh
+        Navigator.of(context).pop(true);
+      } else {
+        // ❌ If failed, revert the added comment
+        setState(() {
+          comments.removeAt(0);
+          widget.post.no_comments =
+              (int.parse(widget.post.no_comments) - 1).toString();
+        });
+      }
+    } catch (e) {
+      print("❌ Comment error: $e");
     }
   }
 }

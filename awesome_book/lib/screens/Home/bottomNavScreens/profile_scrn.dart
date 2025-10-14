@@ -311,6 +311,7 @@
 //     );
 //   }
 // }
+
 import 'dart:convert';
 import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/screens/Home/bottomNavScreens/follow_req.dart';
@@ -334,16 +335,18 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
   @override
   void initState() {
     super.initState();
+    _loadProfileOnce();
     fetchProfileAndPosts();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted && glb.shouldRefreshProfile) {
-          fetchProfileAndPosts();
-          glb.shouldRefreshProfile = false;
-        }
-      });
-    });
+    @override
+    void didPopNext() {
+      print("🔁 Returned to profile screen");
+      if (glb.shouldRefreshProfile) {
+        print("🔄 Refreshing profile data...");
+        fetchProfileAndPosts();
+        glb.shouldRefreshProfile = false;
+      }
+    }
   }
 
   @override
@@ -370,48 +373,59 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
   }
 
   // ✅ Fetch profile info & posts
+  @override
+
+  /// ✅ Prevent double API calls and refresh properly when needed
+  Future<void> _loadProfileOnce() async {
+    print("🚀 Initializing profile screen...");
+    if (isLoading) return; // prevent duplicate triggers
+    setState(() => isLoading = true);
+    await fetchProfileAndPosts();
+    setState(() => isLoading = false);
+  }
+
+  /// ✅ Unified function — only one API run per refresh
+  @override
   Future<void> fetchProfileAndPosts() async {
     final userId = glb.userDetails.id;
-    if (userId.isEmpty) return;
+    if (userId.isEmpty) {
+      print("⚠️ No user_id found");
+      return;
+    }
 
+    print("🚀 Starting fetchProfileAndPosts() for user_id=$userId");
     setState(() => isLoading = true);
 
     try {
+      // ✅ Fetch profile
       final profileRes = await http.post(
         Uri.parse("https://awesomebook.in/awesomebookbackend/GetMyDets"),
         body: {"user_id": userId},
       );
 
-      print("📤 Fetching GetMyDets for user_id=${glb.userDetails.id}");
       print("📨 Raw GetMyDets response: ${profileRes.body}");
-
-      print(
-          "🔹 Profile counts updated => Followers: ${glb.userDetails.no_follower}, Following: ${glb.userDetails.no_following}");
 
       if (profileRes.statusCode == 200 && profileRes.body.isNotEmpty) {
         final decoded = jsonDecode(profileRes.body);
+        final data = decoded is List ? decoded.first : decoded;
 
-        if (decoded is List && decoded.isNotEmpty) {
-          final data = decoded.first;
+        // ✅ Update user details
+        glb.userDetails.name = data["name"] ?? "";
+        glb.userDetails.user_name = data["user_name"] ?? "";
+        glb.userDetails.bio = data["bio"] ?? "";
+        glb.userDetails.no_posts = data["total_posts"]?.toString() ?? "0";
+        glb.userDetails.no_follower =
+            data["total_followers"]?.toString() ?? "0";
+        glb.userDetails.no_following =
+            data["total_following"]?.toString() ?? "0";
+        glb.userDetails.verified = data["verified"]?.toString() ?? "0";
+        glb.userDetails.profile_img = data["profile_image"]?.toString() ?? "";
 
-          setState(() {
-            glb.userDetails.name = data["name"] ?? glb.userDetails.name;
-            glb.userDetails.user_name =
-                data["user_name"] ?? glb.userDetails.user_name;
-            glb.userDetails.bio = data["bio"] ?? glb.userDetails.bio;
-            glb.userDetails.no_posts = data["total_posts"]?.toString() ?? "0";
-            glb.userDetails.no_follower =
-                data["total_followers"]?.toString() ?? "0";
-            glb.userDetails.no_following =
-                data["total_following"]?.toString() ?? "0";
-            glb.userDetails.verified =
-                data["verified"]?.toString() ?? glb.userDetails.verified;
-            glb.userDetails.profile_img = data["profile_image"]?.toString() ??
-                glb.userDetails.profile_img;
-          });
-        }
+        print(
+            "✅ Updated counts → Followers: ${glb.userDetails.no_follower}, Following: ${glb.userDetails.no_following}");
       }
 
+      // ✅ Fetch posts
       final postsRes = await http.post(
         Uri.parse("https://awesomebook.in/awesomebookbackend/GetMyPosts"),
         body: {"user_id": userId},
@@ -419,11 +433,13 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
 
       if (postsRes.statusCode == 200 && postsRes.body.isNotEmpty) {
         final postsData = jsonDecode(postsRes.body);
-        if (postsData is List) {
-          setState(() => userPosts = postsData);
-        } else if (postsData is Map && postsData["posts"] is List) {
-          setState(() => userPosts = postsData["posts"]);
-        }
+        setState(() {
+          if (postsData is List) {
+            userPosts = postsData;
+          } else if (postsData is Map && postsData["posts"] is List) {
+            userPosts = postsData["posts"];
+          }
+        });
       }
     } catch (e) {
       print("❌ Error fetching profile/posts: $e");
@@ -451,49 +467,22 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
       return;
     }
 
-    setState(() => isVerifying = true);
-    glb.loading(context);
-
-    try {
-      final statusUrl = Uri.parse(
-          "https://awesomebook.in/awesomebookbackend/veriRequest_status");
-      final statusRes = await http.post(statusUrl, body: {"user_id": userId});
-      final status = statusRes.body.toLowerCase().trim();
-
-      if (status.contains("pending")) {
-        Navigator.pop(context);
-        glb.errorToast(
-            context, "Your verification request is already pending.");
-        setState(() => isVerifying = false);
-        return;
-      } else if (status.contains("approved") ||
-          status.contains("verified") ||
-          status.contains("1")) {
-        Navigator.pop(context);
-        glb.successToast(context, "You are already verified ✅");
-        setState(() => glb.userDetails.verified = "1");
-        return;
-      }
-
-      final sendUrl = Uri.parse(
-          "https://awesomebook.in/awesomebookbackend/send_veriRequest");
-      final sendRes = await http.post(sendUrl, body: {"user_id": userId});
-      Navigator.pop(context);
-
-      if (sendRes.statusCode == 200 &&
-          (sendRes.body.contains("1") ||
-              sendRes.body.toLowerCase().contains("success"))) {
-        glb.successToast(context,
-            "Verification request sent successfully ✅\nWe'll notify you once approved.");
-      } else {
-        glb.errorToast(context, "Failed to send verification request.");
-      }
-    } catch (e) {
-      Navigator.pop(context);
-      glb.errorToast(context, "Error: $e");
-    } finally {
-      setState(() => isVerifying = false);
-    }
+    // 🧩 Show modal bottom sheet
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return VerificationBadgeModal(
+            userId: userId,
+            onVerified: () {
+              // Refresh profile data once verified
+              setState(() => glb.userDetails.verified = "1");
+            });
+      },
+    );
   }
 
   @override
@@ -607,6 +596,26 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
                           "Edit profile", RouteGenerator.rt_editprofile),
                       _actionButton("New post", RouteGenerator.rt_uploadPost),
                     ],
+                  ),
+                  const SizedBox(height: 15),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ElevatedButton.icon(
+                      onPressed: _handleVerificationRequest, // 👈 Opens modal
+                      icon: const Icon(Icons.verified, color: Colors.white),
+                      label: const Text(
+                        "Verification Badge",
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(double.infinity, 40),
+                        elevation: 2,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 15),
                   if (glb.userDetails.verified != "1")
@@ -734,6 +743,123 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
           ),
         );
       },
+    );
+  }
+}
+
+class VerificationBadgeModal extends StatefulWidget {
+  final String userId;
+  final VoidCallback onVerified;
+  const VerificationBadgeModal({
+    super.key,
+    required this.userId,
+    required this.onVerified,
+  });
+
+  @override
+  State<VerificationBadgeModal> createState() => _VerificationBadgeModalState();
+}
+
+class _VerificationBadgeModalState extends State<VerificationBadgeModal> {
+  String _status = "Checking...";
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStatus();
+  }
+
+  Future<void> _fetchStatus() async {
+    try {
+      final res = await http.post(
+        Uri.parse(
+            "https://awesomebook.in/awesomebookbackend/veriRequest_status"),
+        body: {"user_id": widget.userId},
+      );
+      final body = res.body.toLowerCase().trim();
+
+      if (body.contains("approved") ||
+          body.contains("verified") ||
+          body.contains("1")) {
+        setState(() => _status = "✅ Verified");
+        widget.onVerified();
+      } else if (body.contains("pending")) {
+        setState(() => _status = "🕓 Pending");
+      } else {
+        setState(() => _status = "Not Requested");
+      }
+    } catch (e) {
+      setState(() => _status = "Error fetching status");
+    }
+  }
+
+  Future<void> _sendRequest() async {
+    setState(() => _isSending = true);
+    try {
+      final res = await http.post(
+        Uri.parse("https://awesomebook.in/awesomebookbackend/send_veriRequest"),
+        body: {"user_id": widget.userId},
+      );
+
+      if (res.statusCode == 200 &&
+          (res.body.contains("1") ||
+              res.body.toLowerCase().contains("success"))) {
+        glb.successToast(context, "Verification request sent successfully ✅");
+        setState(() => _status = "🕓 Pending");
+      } else {
+        glb.errorToast(context, "Failed to send verification request.");
+      }
+    } catch (e) {
+      glb.errorToast(context, "Error: $e");
+    } finally {
+      setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified, color: Colors.blue, size: 50),
+          const SizedBox(height: 12),
+          const Text(
+            "Verification Badge Status",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _status,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
+          ),
+          const SizedBox(height: 20),
+          if (_status == "Not Requested")
+            ElevatedButton.icon(
+              onPressed: _isSending ? null : _sendRequest,
+              icon: const Icon(Icons.send, color: Colors.white),
+              label: Text(
+                _isSending ? "Sending..." : "Send Verification Request",
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                minimumSize: const Size(double.infinity, 45),
+              ),
+            ),
+          if (_status == "🕓 Pending")
+            const Text("Your request is under review 🕓",
+                style: TextStyle(color: Colors.orange, fontSize: 14)),
+          if (_status == "✅ Verified")
+            const Text("You are verified ✅",
+                style: TextStyle(color: Colors.green, fontSize: 14)),
+          const SizedBox(height: 15),
+        ],
+      ),
     );
   }
 }

@@ -165,7 +165,6 @@ class _MessageScreenState extends State<MessageScreen> {
         return;
       }
 
-      // oldest → top, newest → bottom
       bdy = bdy.reversed.toList();
 
       for (var message in bdy) {
@@ -214,7 +213,6 @@ class _MessageScreenState extends State<MessageScreen> {
           return;
         }
 
-        // ✅ Ensure order oldest → newest
         bdy = bdy.reversed.toList();
 
         // ✅ Convert raw data into a list of Message_Model
@@ -228,7 +226,6 @@ class _MessageScreenState extends State<MessageScreen> {
           );
         }).toList();
 
-        // ✅ Insert them at the top
         double beforeOffset = _scrollController.offset;
         double beforeMaxExtent = _scrollController.position.maxScrollExtent;
 
@@ -236,7 +233,6 @@ class _MessageScreenState extends State<MessageScreen> {
           messages.insertAll(0, olderMessages);
         });
 
-        // ✅ Keep scroll stable
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
             double newMaxExtent = _scrollController.position.maxScrollExtent;
