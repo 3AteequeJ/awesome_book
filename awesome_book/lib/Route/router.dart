@@ -25,6 +25,7 @@ class RouteGenerator {
   static const String rt_uploadPost = "rt_uploadPost";
   static const String rt_postFullScrn = "rt_postFullScrn";
   static const String rt_followRequests = '/followRequests';
+  static const String rt_camera = "rt_camera";
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     final args = settings.arguments;

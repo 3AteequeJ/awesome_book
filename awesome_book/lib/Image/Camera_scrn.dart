@@ -312,18 +312,10 @@ class _CameraScrnState extends State<CameraScrn> with WidgetsBindingObserver {
           children: [
             Expanded(
               child: Container(
-                color: Colors.black,
-                alignment: Alignment.center,
-                child: AspectRatio(
-                  aspectRatio: controller?.value.aspectRatio ?? (9 / 16),
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: _buildCameraPreview(),
-                    ),
-                  ),
-                ),
+                color: Colors.amber,
+                child: RotatedBox(
+                    quarterTurns: isRearCameraSelected ? 1 : 3,
+                    child: _buildCameraPreview()),
               ),
             ),
             Align(

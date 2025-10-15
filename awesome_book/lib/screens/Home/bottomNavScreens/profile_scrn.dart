@@ -321,6 +321,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:awesome_book/utils/global.dart' as glb;
 import 'package:flutter/scheduler.dart';
+import 'package:awesome_book/utils/sharedPrefs.dart';
 
 class Profile_scrn extends StatefulWidget {
   @override
@@ -485,6 +486,23 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
     );
   }
 
+  Future<void> _logoutUser() async {
+    // ✅ Clear SharedPreferences
+    await clearAllPrefs();
+
+    // ✅ Reset in-memory user object
+    glb.userDetails = glb.UserDetails();
+
+    // ✅ Navigate to login and clear history
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        RouteGenerator.rt_login,
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -639,15 +657,50 @@ class _Profile_scrnState extends State<Profile_scrn> with RouteAware {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Posts",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+
+                  const SizedBox(height: 15),
+
+// 🔹 Logout button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Confirm Logout"),
+                            content:
+                                const Text("Are you sure you want to logout?"),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Cancel")),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _logoutUser();
+                                },
+                                child: const Text("Logout"),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(double.infinity, 45),
+                      ),
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      label: const Text(
+                        "Logout",
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 10),
                   _buildPostsGrid(),
                 ],

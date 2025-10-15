@@ -8,22 +8,30 @@ bool shouldRefreshProfile = false;
 // ✅ Store follow/unfollow state temporarily in memory
 Map<String, bool> followCache = {};
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+bool get isLoggedIn =>
+    userDetails.id != null &&
+    userDetails.id.isNotEmpty &&
+    userDetails.id != "-1";
 
-class userDetails {
-  static String id = "";
-  static String name = "";
-  static String user_name = "";
-  static String email_id = "";
-  static String profile_img = "";
-  static String pswd = "";
-  static String verified = "";
-  static String status = "";
-  static String open = "";
-  static String dateTime = "";
-  static String no_posts = "";
-  static String no_follower = "";
-  static String no_following = "";
-  static String bio = "";
+// ✅ Global in-memory user object
+UserDetails userDetails = UserDetails();
+
+// ✅ User model (non-static, instance-based)
+class UserDetails {
+  String id = "";
+  String name = "";
+  String user_name = "";
+  String email_id = "";
+  String profile_img = "";
+  String pswd = "";
+  String verified = "";
+  String status = "";
+  String open = "";
+  String dateTime = "";
+  String no_posts = "";
+  String no_follower = "";
+  String no_following = "";
+  String bio = "";
 }
 
 class newUser {
@@ -117,6 +125,8 @@ class API {
   static const String getConvo = baseURL + "GetConvo";
   static const String search = baseURL + "search";
   static const String GetMyDets = baseURL + "GetMyDets";
+  static const String GetMyStories = baseURL + "GetMyStories";
+  static const String UploadStory = baseURL + "Upload_story";
 }
 
 errorSnackBar(BuildContext context, String message) {
@@ -310,5 +320,44 @@ void infoToast(BuildContext context, String message) {
       backgroundColor: Colors.blueAccent,
       behavior: SnackBarBehavior.floating,
     ),
+  );
+}
+
+Future<void> showLoginPrompt(BuildContext context) async {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Login Required",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "You need to login or register to perform this action.",
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // just close
+            },
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, 'rt_login'); // route to login
+            },
+            child: const Text("Login"),
+          ),
+        ],
+      );
+    },
   );
 }

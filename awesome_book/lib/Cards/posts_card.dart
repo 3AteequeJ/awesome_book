@@ -92,6 +92,10 @@ class _Posts_cardState extends State<Posts_card> {
   }
 
   likePost_async() async {
+    if (glb.userDetails.id == "-1") {
+      glb.showLoginPrompt(context);
+      return;
+    }
     Uri url = Uri.parse(glb.API.AddLike);
 
     var res = await http.post(url, body: {
@@ -389,6 +393,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   List<CommentsModel> comments = [];
   _toggleComments() async {
+    if (glb.userDetails.id == "-1") {
+      glb.showLoginPrompt(context);
+      return;
+    }
     comments = [];
     Uri url = Uri.parse(glb.API.GetComments);
 
