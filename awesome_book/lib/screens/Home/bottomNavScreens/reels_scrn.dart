@@ -648,19 +648,38 @@ class _Reels_scrnState extends State<Reels_scrn> {
                     children: [
                       // Like Button
                       Column(
+                        // children: [
+                        //   IconButton(
+                        //     icon: reel.is_liked == '1'
+                        //         ? Icon(Icons.favorite,
+                        //             color: Colors.red, size: 28)
+                        //         : Icon(CupertinoIcons.heart,
+                        //             color: Colors.white, size: 24),
+                        //     onPressed:
+                        //         index == _currentIndex ? _toggleLike : null,
+                        //   ),
+                        //   Text(
+                        //     reel.no_likes,
+                        //     style: TextStyle(color: Colors.white, fontSize: 12),
+                        //   ),
+                        // ],
                         children: [
                           IconButton(
-                            icon: reel.is_liked == '1'
-                                ? Icon(Icons.favorite,
-                                    color: Colors.red, size: 28)
-                                : Icon(CupertinoIcons.heart,
-                                    color: Colors.white, size: 24),
                             onPressed:
                                 index == _currentIndex ? _toggleLike : null,
+                            icon: Image.asset(
+                              reel.is_liked == '1'
+                                  ? 'assets/images/like.png'
+                                  : 'assets/images/unlike.png',
+                              width: 26,
+                              height: 26,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                           Text(
                             reel.no_likes,
-                            style: TextStyle(color: Colors.white, fontSize: 12),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
                           ),
                         ],
                       ),
@@ -948,10 +967,11 @@ class _Reels_scrnState extends State<Reels_scrn> {
                   child: AnimatedOpacity(
                     duration: Duration(milliseconds: 300),
                     opacity: opacity,
-                    child: Icon(
-                      Icons.favorite,
-                      color: Colors.red,
-                      size: 100,
+                    child: Image.asset(
+                      fit: BoxFit.cover,
+                      'assets/images/like.png',
+                      width: 80,
+                      height: 80,
                     ),
                   ),
                 ),

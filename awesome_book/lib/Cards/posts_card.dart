@@ -1,10 +1,8 @@
 import 'dart:convert';
-
 import 'package:awesome_book/models/comments_model.dart';
 import 'package:awesome_book/models/posts_model.dart';
 import 'package:awesome_book/utils/reels_fullScreen.dart';
 import 'package:awesome_book/widgets/mytext.dart';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
@@ -239,13 +237,23 @@ class _Posts_cardState extends State<Posts_card> {
                               ]),
                         ),
                 ),
+                // AnimatedOpacity(
+                //   duration: Duration(milliseconds: 300),
+                //   opacity: opacity,
+                //   child: Image.network(
+                //       // Icons.favorite,
+                //       // color: Colors.black,
+                //       // size: 100,
+                //       "assets/images/like.png"),
+                // ),
                 AnimatedOpacity(
                   duration: Duration(milliseconds: 300),
                   opacity: opacity,
-                  child: Icon(
-                    Icons.favorite,
-                    color: Colors.red,
-                    size: 100,
+                  child: Image.asset(
+                    fit: BoxFit.cover,
+                    'assets/images/like.png',
+                    width: 80,
+                    height: 80,
                   ),
                 ),
               ],
@@ -270,13 +278,21 @@ class _Posts_cardState extends State<Posts_card> {
                               unlike();
                             }
                           },
-                          child: Icon(
-                            (widget.posts.is_liked == '1')
-                                ? CupertinoIcons.heart_fill
-                                : CupertinoIcons.heart,
-                            color: (widget.posts.is_liked == '1')
-                                ? Colors.red
-                                : Colors.grey,
+                          // child: Icon(
+                          //   (widget.posts.is_liked == '1')
+                          //       ? CupertinoIcons.heart_fill
+                          //       : CupertinoIcons.heart,
+                          //   color: (widget.posts.is_liked == '1')
+                          //       ? Colors.red
+                          //       : Colors.grey,
+                          // ),
+                          child: Image.asset(
+                            widget.posts.is_liked == '1'
+                                ? 'assets/images/like.png'
+                                : 'assets/images/unlike.png',
+                            width: 26,
+                            height: 26,
+                            fit: BoxFit.contain,
                           ),
                         ),
                         Container(

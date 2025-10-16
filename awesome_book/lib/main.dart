@@ -72,7 +72,6 @@
 // }
 
 import 'dart:async';
-
 import 'package:awesome_book/Route/router.dart';
 import 'package:awesome_book/core/errrors/error_reporter.dart';
 import 'package:awesome_book/utils/colours.dart';
