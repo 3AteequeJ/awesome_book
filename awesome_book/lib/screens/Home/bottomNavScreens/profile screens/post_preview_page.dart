@@ -569,12 +569,15 @@ class _PostPreviewPageState extends State<PostPreviewPage> {
                     Row(
                       children: [
                         IconButton(
-                          icon: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.red : Colors.black,
-                            size: 26,
-                          ),
                           onPressed: () => isLiked ? unlikePost() : likePost(),
+                          icon: Image.asset(
+                            isLiked
+                                ? 'assets/images/like.png'
+                                : 'assets/images/unlike.png',
+                            width: 26,
+                            height: 26,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         IconButton(

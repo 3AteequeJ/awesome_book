@@ -138,15 +138,20 @@ class _PostFullscreenState extends State<PostFullscreen> {
                             },
                           ),
                         )),
+                    // AnimatedOpacity(
+                    //   duration: Duration(milliseconds: 300),
+                    //   opacity: opacity,
                     AnimatedOpacity(
                       duration: Duration(milliseconds: 300),
                       opacity: opacity,
-                      child: Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 100,
+                      child: Image.asset(
+                        fit: BoxFit.cover,
+                        'assets/images/like.png',
+                        width: 80,
+                        height: 80,
                       ),
                     ),
+                    //     ),
                   ],
                 ),
               ),
@@ -159,13 +164,13 @@ class _PostFullscreenState extends State<PostFullscreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              (widget.post.is_liked == '1')
-                                  ? CupertinoIcons.heart_fill
-                                  : CupertinoIcons.heart,
-                              color: (widget.post.is_liked == '1')
-                                  ? Colors.red
-                                  : Colors.grey,
+                            Image.asset(
+                              widget.post.is_liked == '1'
+                                  ? 'assets/images/like.png'
+                                  : 'assets/images/unlike.png',
+                              width: 26,
+                              height: 26,
+                              fit: BoxFit.contain,
                             ),
                             Container(
                               // height: 2.h,
